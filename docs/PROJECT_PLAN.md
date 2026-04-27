@@ -6,6 +6,7 @@
 
 ## 관련 문서
 
+- [프로젝트 제안서](PROJECT_PROPOSAL.md)
 - [기술 선택 근거](TECH_DECISIONS.md)
 - [협업 운영 계획](COLLABORATION_PLAN.md)
 - [제출 계획 보강 문서](SUBMISSION_READINESS.md)

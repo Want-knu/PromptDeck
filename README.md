@@ -26,6 +26,7 @@ PromptDeck은 사용자가 자신의 로컬 환경에서 실행하는 LLM API �
 
 ## 문서
 
+- [프로젝트 제안서](docs/PROJECT_PROPOSAL.md)
 - [프로젝트 계획서](docs/PROJECT_PLAN.md)
 - [기술 선택 근거](docs/TECH_DECISIONS.md)
 - [협업 운영 계획](docs/COLLABORATION_PLAN.md)
