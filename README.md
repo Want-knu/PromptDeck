@@ -29,8 +29,8 @@ PromptDeck은 사용자가 자신의 로컬 환경에서 실행하는 LLM API �
 - [프로젝트 계획서](docs/PROJECT_PLAN.md)
 - [기술 선택 근거](docs/TECH_DECISIONS.md)
 - [협업 운영 계획](docs/COLLABORATION_PLAN.md)
+- [제출 계획 보강 문서](docs/SUBMISSION_READINESS.md)
 
 ## 과제 요구사항 대응
 
 PromptDeck은 Flask 기반 REST API, SQLite 데이터베이스, Docker 실행 환경, GitHub Actions 기반 CI/CD, GitHub Issues/PR/Projects 협업 방식을 통해 과제의 주요 기술 요구사항을 충족하는 것을 목표로 합니다.
-

@@ -4,6 +4,12 @@
 > 목적: 팀 논의 및 과제 계획서 작성을 위한 기준 문서  
 > 비고: 세부 구현 범위와 기술 선택은 팀 협의 후 변경될 수 있다.
 
+## 관련 문서
+
+- [기술 선택 근거](TECH_DECISIONS.md)
+- [협업 운영 계획](COLLABORATION_PLAN.md)
+- [제출 계획 보강 문서](SUBMISSION_READINESS.md)
+
 ## 1. 프로젝트 개요
 
 PromptDeck은 사용자가 로컬 환경에서 실행하는 LLM API 요청 빌더이다.
@@ -177,4 +183,3 @@ Local Config
 - OS Keychain 연동
 - Electron 또는 Tauri 기반 데스크톱 앱 패키징
 - Grafana 등 모니터링 도구 연동
-
