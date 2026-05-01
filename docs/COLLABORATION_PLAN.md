@@ -1,11 +1,13 @@
 # PromptDeck 협업 운영 계획
 
-> 상태: 초기 운영안  
+> 상태: 팀 회의 후 확정안
 > 목적: GitHub Issues, Pull Requests, Projects를 활용한 과제 협업 방식 정리
 
 ## 1. 협업 목표
 
 PromptDeck은 과제 평가 기준에 맞춰 GitHub 기반 협업 과정을 명확히 남긴다. 기능 구현뿐 아니라 Issue 관리, Pull Request 기록, Project 진행 상황을 함께 관리하여 팀원의 기여 과정이 보이도록 한다.
+
+확정된 구현 방향은 React + Vite 프론트엔드, Java Spring 백엔드, MySQL 데이터베이스, GCP 배포, GitHub Actions CI/CD이다.
 
 ## 2. GitHub Issues 운영
 
@@ -16,18 +18,21 @@ Issue 유형:
 - Feature: 새로운 기능 구현
 - Bug: 오류 수정
 - Docs: 문서 작성 및 수정
-- Chore: 설정, Docker, CI 등 개발 환경 작업
+- Chore: 설정, Docker, CI, 배포 환경 작업
 - Refactor: 동작 변경 없는 구조 개선
 - Test: 테스트 코드 작성 및 보강
 
 Issue 예시:
 
+- 로그인 화면 및 사용자별 접근 흐름 구현
 - Provider 설정 CRUD API 구현
 - 프롬프트 프리셋 CRUD API 구현
 - 요청 JSON 빌더 화면 구현
 - Custom API 요청 실행 기능 구현
-- SQLite 모델 및 마이그레이션 구성
+- MySQL 스키마 및 마이그레이션 구성
+- Provider API Key 보안 저장 및 마스킹 처리
 - Docker Compose 실행 환경 구성
+- GCP 배포 설정 정리
 - GitHub Actions CI 구성
 - README 및 프로젝트 계획서 작성
 
@@ -59,12 +64,16 @@ Project 보드는 다음 컬럼으로 관리한다.
 
 작업 브랜치 예시:
 
+- `feature/auth-flow`
 - `feature/provider-crud`
 - `feature/preset-crud`
 - `feature/request-builder`
 - `feature/chat-execution`
 - `feature/history-view`
+- `feature/api-key-security`
+- `chore/mysql-schema`
 - `chore/docker-compose`
+- `chore/gcp-deploy`
 - `ci/github-actions`
 - `docs/project-plan`
 
@@ -100,7 +109,8 @@ PR 제목 예시:
 
 ```text
 feat: add prompt preset CRUD API
-docs: add initial project plan
+feat: add provider adapter layer
+docs: update final project plan
 ci: add GitHub Actions workflow
 ```
 
@@ -109,7 +119,7 @@ PR 본문 예시:
 ```md
 ## Summary
 - 프롬프트 프리셋 생성/조회/수정/삭제 API를 추가했습니다.
-- SQLite 모델과 service layer를 추가했습니다.
+- MySQL 테이블과 service layer를 추가했습니다.
 
 ## Test
 - [ ] Backend unit tests pass
@@ -141,7 +151,7 @@ type 예시:
 
 ```text
 feat: add provider settings model
-docs: add technology decision document
+docs: update project plan
 ci: run backend tests on pull request
 ```
 
@@ -152,9 +162,9 @@ ci: run backend tests on pull request
 | 역할 | 담당 작업 |
 | --- | --- |
 | Frontend | React 화면, 상태 관리, API 연동 |
-| Backend | Flask REST API, Provider Adapter, 실행 로직 |
-| Database | SQLite 모델, 저장 구조, 히스토리 관리 |
-| DevOps | Docker, GitHub Actions, 실행 가이드 |
+| Backend | Java Spring REST API, Provider Adapter, 실행 로직 |
+| Database | MySQL 스키마, 저장 구조, 히스토리 관리 |
+| DevOps | Docker, GitHub Actions, GCP 배포 가이드 |
 | Documentation | README, 계획서, API 문서, 발표 자료 |
 
 ## 8. Definition of Done
@@ -167,4 +177,3 @@ ci: run backend tests on pull request
 - README 또는 docs 업데이트가 필요한 경우 반영한다.
 - 리뷰 후 `main` 또는 `develop`에 merge된다.
 - Project 상태가 `Done`으로 이동된다.
-
