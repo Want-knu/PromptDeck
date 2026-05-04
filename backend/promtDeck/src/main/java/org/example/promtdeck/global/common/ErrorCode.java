@@ -9,7 +9,8 @@ public enum ErrorCode {
     //형식 오류
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "AUTH_002", "이메일 형식이 올바르지 않습니다."),
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "AUTH_003", "비밀번호 형식이 올바르지 않습니다."),
-
+    //회원가입시  이메일 중복 확인
+    DUPLICATED_EMAIL(HttpStatus.CONFLICT,"USER_001","이미 사용  중인 이메일입니다." ),
     //User 조회
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_004", "존재하지 않는 사용자입니다."),
 
@@ -30,6 +31,7 @@ public enum ErrorCode {
 
     // 서버 오류
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_001", "서버 내부 오류가 발생했습니다.");
+
 
     private final HttpStatus status;
 
