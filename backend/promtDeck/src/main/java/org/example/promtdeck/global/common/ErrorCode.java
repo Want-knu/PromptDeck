@@ -25,7 +25,7 @@ public enum ErrorCode {
 
     // JWT 관련
     TOKEN_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH_009", "토큰 생성에 실패했습니다."),
-    FORBIDDEN(HttpStatus.FORBIDDEN,"AUTH_010","접근 권한이 없습니다.")
+    FORBIDDEN(HttpStatus.FORBIDDEN,"AUTH_010","접근 권한이 없습니다."),
 
     // 기타 인증 관련
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_010", "인증이 필요합니다."),
