@@ -29,7 +29,7 @@ public class GlobalControllerAdvice {
 
         return ResponseEntity
                 .status(ErrorCode.INVALID_REQUEST.getStatus())
-                .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST));
+                .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, message));
     }
 
     @ExceptionHandler(Exception.class)
