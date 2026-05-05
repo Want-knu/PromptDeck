@@ -51,6 +51,7 @@ out/
 # =========================
 *.pem
 *.key
+*.env
 
 .DS_Store
 .idea/
