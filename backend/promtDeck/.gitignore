@@ -42,10 +42,7 @@ out/
 
 # =========================
 
-application.yml
-application.properties
-application-dev.yml
-application-local.yml
+
 
 # =========================
 
