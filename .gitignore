@@ -1,3 +1,50 @@
-.DS_Store
 .idea/
-*.i
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Eclipse
+.project
+.classpath
+.settings/
+.metadata
+bin/
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Secrets / Environment
+# ===========================
+.env
+.env.local
+.env.*.local
+config/secrets.local.json
+**/application-local.yml
+**/application-local.properties
+
+# ===========================
+# Docker
+# ===========================
+# 데이터 볼륨이 로컬 폴더로 마운트되는 경우
+docker/data/
+mysql-data/
+
+# ===========================
+# Misc
+# ===========================
+*.swp
+*.swo
+*~

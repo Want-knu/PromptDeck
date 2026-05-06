@@ -1,286 +1,126 @@
-# PromptDeck Project Proposal
+# PromptDeck 프로젝트 제안서
 
-> Submission due: 2026-05-01 (Fri)
-> Status: Draft for team discussion
-> Project name: PromptDeck
+> 제출일: 2026-05-01 (금)
+> 상태: 팀 회의 후 확정안
+> 프로젝트명: PromptDeck
 
-## 1. Project Overview
+## 1. 프로젝트 개요
 
-PromptDeck is a local-first LLM API request builder.
+PromptDeck은 여러 LLM Provider의 프롬프트와 API 요청 형식을 한곳에서 관리하고 실행할 수 있는 서버 배포형 LLM API 요청 빌더 웹 서비스이다.
 
-The application helps users configure provider-specific API request formats, save reusable prompt presets, preview generated JSON requests, execute requests against selected LLM providers, and review request/response history. PromptDeck is designed as a local tool rather than a centralized SaaS service, so user API keys remain in the user's local execution environment.
+사용자는 로그인 후 OpenAI, Gemini, Claude, Custom API 등 Provider별 요청 형식을 설정하고, 자주 사용하는 프롬프트를 프리셋으로 저장할 수 있다. 이후 Provider와 프리셋을 선택해 요청 JSON을 미리 확인하고, 실제 API 요청을 실행한 뒤 응답 결과와 실행 기록을 다시 조회할 수 있다.
 
-## 2. System Architecture Diagram
+PromptDeck은 GCP에 배포되는 웹 서비스로 구성하며, 사용자별 Provider 설정, 프롬프트 프리셋, API Key 기록, 실행 히스토리를 분리해 관리한다.
 
-### 2.1 High-Level Architecture
+## 2. 시스템 아키텍처 다이어그램 (System Architecture Diagram)
 
-```mermaid
-flowchart LR
-    User[User] --> Browser[Web Browser]
-    Browser --> Frontend[React + Vite Frontend]
-    Frontend -->|REST API| Backend[Flask Backend]
+![그림 1 시스템 아키텍처 다이어그램](system_architecture.png)
 
-    Backend --> DB[(SQLite Database)]
-    Backend --> Secrets[Local Secret Config]
-    Backend --> Adapter[Provider Adapter Layer]
-
-    Adapter --> OpenAI[OpenAI API]
-    Adapter --> Gemini[Gemini API]
-    Adapter --> Claude[Claude API]
-    Adapter --> Custom[Custom REST API]
-
-    subgraph Local Environment
-        Frontend
-        Backend
-        DB
-        Secrets
-        Adapter
-    end
-```
-
-### 2.2 Request Execution Flow
+### 요청 실행 흐름
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant FE as React Frontend
-    participant BE as Flask REST API
-    participant DB as SQLite
-    participant Secret as Local Secret Config
+    actor User as 사용자
+    participant FE as React 프론트엔드
+    participant BE as Java Spring REST API
+    participant DB as MySQL
+    participant Adapter as Provider Adapter
     participant Provider as LLM Provider API
 
-    User->>FE: Select provider and prompt preset
-    FE->>BE: Request JSON preview
-    BE->>DB: Load provider and preset
-    BE-->>FE: Return generated request JSON
-    User->>FE: Execute request
+    User->>FE: 로그인 후 Provider와 프리셋 선택
+    FE->>BE: 요청 JSON 미리보기 요청
+    BE->>DB: 사용자 소유 Provider와 프리셋 조회
+    BE-->>FE: 생성된 요청 JSON 반환
+    User->>FE: API 요청 실행
     FE->>BE: POST /api/requests/execute
-    BE->>Secret: Load API key
-    BE->>Provider: Send provider-specific request
-    Provider-->>BE: Return response
-    BE->>DB: Save execution log and messages
-    BE-->>FE: Return response result
-    FE-->>User: Display response and history
+    BE->>DB: 보호된 Provider API Key 정보 조회
+    BE->>Adapter: Provider별 요청 형식 생성
+    Adapter->>Provider: 외부 LLM API 요청 전송
+    Provider-->>Adapter: 응답 반환
+    Adapter-->>BE: 응답 형식 정리
+    BE->>DB: 실행 로그와 메시지 저장
+    BE-->>FE: 응답 결과 반환
+    FE-->>User: 응답과 히스토리 표시
 ```
 
-### 2.3 Component Responsibilities
+### 구성 요소 역할
 
-| Component | Responsibility |
+| 구성 요소 | 역할 |
 | --- | --- |
-| React Frontend | Provider settings UI, prompt preset UI, request builder, chat/test runner, history view |
-| Flask Backend | REST API, validation, provider adapter dispatch, request execution, local config handling |
-| SQLite Database | Provider settings, prompt presets, chat sessions, messages, execution logs |
-| Local Secret Config | Provider API keys stored locally and excluded from Git |
-| Provider Adapter Layer | Converts PromptDeck's common request model into each provider's JSON format |
-| Docker Compose | Reproducible local execution environment |
-| GitHub Actions | Automated test/build validation for pull requests |
+| React + Vite Frontend | 로그인 화면, Provider 설정 화면, 프롬프트 프리셋 화면, 요청 빌더, 채팅형 실행 화면, 히스토리 화면 구현 |
+| Java Spring REST API Server | REST API 제공, 요청 검증, 사용자별 데이터 접근, Provider Adapter 호출, 요청 실행 처리 |
+| MySQL Database | 사용자, Provider 설정, 프롬프트 프리셋, Provider API Key 기록, 채팅 세션, 메시지, 실행 로그 저장 |
+| Provider Adapter Layer | PromptDeck의 공통 요청 모델을 각 Provider의 JSON 요청 형식으로 변환 |
+| GCP | 서비스가 실행되는 서버 배포 환경 |
+| Docker / Docker Compose | 개발 및 배포 준비 환경을 재현 가능하게 구성 |
+| GitHub Actions | 테스트, 빌드 검증, 배포 준비 자동화 |
 
-## 3. Frameworks To Be Used
+## 3. 사용할 프레임워크 및 기술 (Frameworks to be Used)
 
-| Area | Selected Technology | Reason |
+| 영역 | 선택 기술 | 사용 이유 |
 | --- | --- | --- |
-| Frontend | React + Vite | Suitable for dynamic UI such as JSON preview, prompt forms, and chat-style interaction. Vite keeps setup and builds lightweight. |
-| Backend | Flask | Lightweight Python web framework suitable for REST API MVP development within the project period. |
-| Database | SQLite | File-based database that fits the local-first application concept and satisfies database integration requirements. |
-| ORM / DB Layer | SQLAlchemy | Common Python ORM for structured database access and cleaner model management. |
-| API Client | `requests` or `httpx` | Used by the backend to call external LLM provider APIs. |
-| Containerization | Docker, Docker Compose | Provides reproducible local execution for frontend/backend and persistent local data volumes. |
-| CI/CD | GitHub Actions | Runs automated tests/build checks on pull requests and main branch updates. |
-| Version Control & Collaboration | GitHub Issues, Pull Requests, Projects | Supports issue tracking, code review, progress management, and contribution history. |
+| Frontend | React + Vite | 요청 JSON 미리보기, 프롬프트 입력 폼, 채팅형 실행 화면처럼 동적인 UI를 구현하기에 적합하다. |
+| Backend | Java Spring | 서버 배포형 웹 서비스에 필요한 구조적인 REST API 서버를 만들기 좋고, MySQL 기반 서비스와 연동하기 적합하다. |
+| Database | MySQL | 사용자 계정, 프리셋, Provider 설정, 실행 기록처럼 지속적으로 보관해야 하는 관계형 데이터를 관리하기 적합하다. |
+| DB Access | JPA / JDBC | Java Spring 백엔드에서 MySQL 데이터를 구조적으로 조회하고 저장하기 위해 사용한다. |
+| API Client | Spring HTTP client library | 백엔드의 Provider Adapter Layer에서 외부 LLM Provider API를 호출하기 위해 사용한다. |
+| Deployment | GCP | 팀 프로젝트의 서버 배포 환경으로 사용한다. |
+| Containerization | Docker, Docker Compose | 프론트엔드, 백엔드, 데이터베이스 관련 실행 환경을 재현 가능하게 구성한다. |
+| CI/CD | GitHub Actions | Pull Request와 주요 브랜치 변경 시 테스트와 빌드 검증을 자동화한다. |
+| Collaboration | GitHub Issues, Pull Requests, Projects | 작업 단위 관리, 코드 리뷰, 진행 상황 추적, 팀원 기여 기록을 남기기 위해 사용한다. |
 
-## 4. Requirements
+## 4. 요구사항 (Requirements)
 
-### 4.1 Functional Requirements
+### 기능 요구사항
 
-| ID | Requirement | Description | Priority |
+| ID | 요구사항 | 설명 | 우선순위 |
 | --- | --- | --- | --- |
-| FR-01 | Provider Management | Users can create, read, update, and delete LLM provider settings. | Must |
-| FR-02 | Prompt Preset Management | Users can create, read, update, and delete reusable prompt presets. | Must |
-| FR-03 | Local API Key Management | Users can save, update, and delete provider API keys in local configuration. | Must |
-| FR-04 | Request JSON Preview | Users can preview the final JSON request before execution. | Must |
-| FR-05 | Request Execution | Users can send generated requests to at least one provider or Custom API. | Must |
-| FR-06 | Response Display | Users can view the response or error returned by the provider. | Must |
-| FR-07 | Request History | Users can view previous requests, responses, status codes, and errors. | Must |
-| FR-08 | Provider Adapter Structure | The backend separates provider-specific request conversion logic. | Must |
-| FR-09 | Custom API Support | Users can configure a custom REST API request format. | Should |
-| FR-10 | Basic Dashboard | Users can view a simple summary of recent activity. | Could |
+| FR-01 | 사용자 로그인 | 사용자는 회원가입 또는 로그인 후 자신의 PromptDeck 데이터에 접근할 수 있다. | Must |
+| FR-02 | Provider 관리 | 사용자는 LLM Provider 설정을 생성, 조회, 수정, 삭제할 수 있다. | Must |
+| FR-03 | 프롬프트 프리셋 관리 | 사용자는 자주 사용하는 프롬프트 프리셋을 생성, 조회, 수정, 삭제할 수 있다. | Must |
+| FR-04 | Provider API Key 관리 | 사용자는 Provider API Key 저장 상태를 확인하고, 저장, 수정, 삭제할 수 있다. | Must |
+| FR-05 | 요청 JSON 미리보기 | 사용자는 실제 실행 전에 생성된 최종 요청 JSON을 확인할 수 있다. | Must |
+| FR-06 | 요청 실행 | 사용자는 생성된 요청을 최소 1개 이상의 Provider 또는 Custom API로 전송할 수 있다. | Must |
+| FR-07 | 응답 표시 | 사용자는 Provider가 반환한 응답 또는 오류를 화면에서 확인할 수 있다. | Must |
+| FR-08 | 요청 히스토리 | 사용자는 이전 요청, 응답, 상태 코드, 오류 정보를 조회할 수 있다. | Must |
+| FR-09 | Provider Adapter 구조 | 백엔드는 Provider별 요청 변환 로직을 분리해 관리한다. | Must |
+| FR-10 | 서버 배포 | 애플리케이션은 GCP 서버 환경에서 실행될 수 있어야 한다. | Must |
+| FR-11 | Custom API 지원 | 사용자는 임의의 REST API 요청 형식을 설정할 수 있다. | Should |
+| FR-12 | 기본 대시보드 | 사용자는 최근 실행 내역과 주요 요약 정보를 간단히 확인할 수 있다. | Could |
 
-### 4.2 Non-Functional Requirements
+### 비기능 요구사항
 
-| ID | Requirement | Description |
+| ID | 요구사항 | 설명 |
 | --- | --- | --- |
-| NFR-01 | Local-first execution | The application runs on the user's local machine or local Docker environment. |
-| NFR-02 | API key safety | API keys are not committed to Git and are not stored on an external server. |
-| NFR-03 | Maintainability | The codebase is separated into frontend, backend, database, and adapter responsibilities. |
-| NFR-04 | Extensibility | New providers can be added by implementing additional adapters. |
-| NFR-05 | Reproducibility | Docker Compose can reproduce the development/runtime environment. |
-| NFR-06 | Collaboration traceability | Issues, PRs, commits, and Projects show team contribution and progress. |
-| NFR-07 | Testability | Core API behavior can be verified through automated or manual tests. |
+| NFR-01 | 사용자별 데이터 분리 | Provider 설정, 프리셋, API Key 기록, 실행 히스토리는 사용자별로 분리되어야 한다. |
+| NFR-02 | API Key 보안 | Provider API Key는 평문 저장을 피하고, API 응답과 화면에는 마스킹된 정보만 표시한다. |
+| NFR-03 | 유지보수성 | 프론트엔드, 백엔드, 데이터베이스, Provider Adapter 책임을 분리한다. |
+| NFR-04 | 확장성 | 새로운 Provider를 추가할 때 Adapter를 추가하는 방식으로 확장할 수 있어야 한다. |
+| NFR-05 | 실행 환경 재현성 | Docker Compose를 통해 개발 및 실행 환경을 재현할 수 있어야 한다. |
+| NFR-06 | 협업 추적성 | Issues, Pull Requests, commits, Projects를 통해 팀 작업 과정을 추적할 수 있어야 한다. |
+| NFR-07 | 테스트 가능성 | 핵심 API 동작은 자동 테스트 또는 수동 테스트로 검증할 수 있어야 한다. |
+| NFR-08 | 배포 가능성 | 서비스는 GCP에 배포 가능해야 하며, CI/CD 흐름과 연결될 수 있어야 한다. |
 
-### 4.3 MVP Scope
+## 5. 프로젝트 계획 및 역할 분담 (Project Plan Including Task Assignments)
 
-The MVP includes:
+팀은 총 3명으로 구성되며, 각 팀원은 하나의 주요 구현 영역을 담당한다. 문서 작성, 테스트, GitHub Issues, Pull Requests, Project board 관리는 각 담당 작업과 연결해 함께 진행한다.
 
-- Provider settings CRUD
-- Prompt preset CRUD
-- Local API key configuration
-- Request JSON preview
-- Request execution for Custom API and at least one LLM-compatible provider
-- Request/response history
-- Docker Compose execution
-- GitHub Actions test/build workflow
-- README and project documentation
-
-The MVP excludes:
-
-- User registration and login
-- Centralized cloud server operation
-- Team preset sharing
-- Real-time collaboration
-- Advanced monitoring dashboard
-- Provider cost calculation
-
-## 5. REST API Draft
-
-| Method | Endpoint | Purpose |
+| 담당 영역 | 주요 책임 | 예상 산출물 |
 | --- | --- | --- |
-| GET | `/api/providers` | List providers |
-| POST | `/api/providers` | Create provider |
-| GET | `/api/providers/{provider_id}` | Get provider detail |
-| PUT | `/api/providers/{provider_id}` | Update provider |
-| DELETE | `/api/providers/{provider_id}` | Delete provider |
-| GET | `/api/presets` | List prompt presets |
-| POST | `/api/presets` | Create prompt preset |
-| GET | `/api/presets/{preset_id}` | Get prompt preset detail |
-| PUT | `/api/presets/{preset_id}` | Update prompt preset |
-| DELETE | `/api/presets/{preset_id}` | Delete prompt preset |
-| GET | `/api/secrets/providers` | Check provider API key status |
-| PUT | `/api/secrets/providers/{provider_type}` | Save or update local API key |
-| DELETE | `/api/secrets/providers/{provider_type}` | Delete local API key |
-| POST | `/api/requests/preview` | Generate request JSON preview |
-| POST | `/api/requests/execute` | Execute generated API request |
-| GET | `/api/history` | List execution history |
-| GET | `/api/history/{history_id}` | View execution detail |
-| DELETE | `/api/history/{history_id}` | Delete execution history |
+| Backend 담당 | Java Spring REST API 서버 구현, 로그인 기능 연동, 사용자별 데이터 접근 처리, Provider/Preset/History API, Provider Adapter Layer, LLM 요청 실행 로직 구현 | Spring API 서버, 백엔드 서비스 로직, Provider 요청 실행 흐름 |
+| Frontend 담당 | React + Vite UI 구현, 로그인 화면, Provider 설정 화면, 프롬프트 프리셋 화면, 요청 JSON 빌더, 채팅형 실행 화면, 히스토리 화면, API 연동 | 프론트엔드 화면, UI 상태 관리, API와 연결된 사용자 흐름 |
+| Database & Docker 담당 | MySQL 스키마 설계, 테이블 관계 구성, 데이터 저장 정책 정리, Docker/Docker Compose 구성, GCP 배포 환경 지원 | MySQL 스키마, 컨테이너 실행 환경, 배포 환경 가이드 |
 
-## 6. Database Draft
+각 GitHub Issue에는 위 담당 영역을 기준으로 명확한 담당자를 지정한다. API 필드, DB 컬럼, 화면 흐름처럼 여러 영역에 영향을 주는 결정은 Issue와 Pull Request에서 함께 논의한다.
 
-| Table | Purpose | Main Fields |
-| --- | --- | --- |
-| `providers` | Stores provider settings | `id`, `name`, `type`, `base_url`, `default_model`, `headers_template`, `body_template`, `response_path`, `enabled` |
-| `prompt_presets` | Stores reusable prompts | `id`, `title`, `description`, `category`, `system_prompt`, `user_prompt_template`, `variables`, `tags` |
-| `chat_sessions` | Groups related request/response messages | `id`, `title`, `provider_id`, `preset_id`, `created_at`, `updated_at` |
-| `messages` | Stores chat-style messages | `id`, `session_id`, `role`, `content`, `metadata`, `created_at` |
-| `execution_logs` | Stores API execution records | `id`, `session_id`, `provider_id`, `preset_id`, `request_body`, `response_body`, `status`, `status_code`, `error_message`, `latency_ms` |
+### 일정 계획
 
-API keys are not stored in the database. They are stored in a local file such as:
-
-```text
-config/secrets.local.json
-```
-
-Only an example file should be tracked by Git:
-
-```text
-config/secrets.example.json
-```
-
-## 7. Project Plan Including Task Assignments
-
-### 7.1 Suggested Team Roles
-
-Actual names should be filled in after team discussion.
-
-| Role | Suggested Owner | Responsibilities |
-| --- | --- | --- |
-| Project Lead / Documentation | Member A | Proposal, README, final report, meeting notes, issue organization |
-| Backend Developer | Member B | Flask REST API, provider adapter layer, request execution |
-| Frontend Developer | Member C | React UI, request builder, preset screens, history screens |
-| Database / Test | Member D | SQLite models, data persistence, API tests |
-| DevOps | Member E | Docker Compose, GitHub Actions, execution guide |
-
-If the team has fewer members, one person may cover multiple roles. The important rule is that each GitHub Issue should have a clear assignee.
-
-### 7.2 Task Breakdown
-
-| Area | Task | Output |
-| --- | --- | --- |
-| Planning | Finalize proposal and project scope | Proposal document, README, docs |
-| Collaboration | Create Issues and GitHub Projects board | Issue list, project board |
-| Backend | Set up Flask project structure | Backend app skeleton |
-| Backend | Implement Provider CRUD API | Provider API and tests |
-| Backend | Implement Prompt Preset CRUD API | Preset API and tests |
-| Backend | Implement local secret config handling | Secret API, ignored local config |
-| Backend | Implement request preview and execution | Preview/execute API |
-| Backend | Implement provider adapter interface | Adapter modules |
-| Database | Define SQLite models | Database schema |
-| Database | Store request history | Execution log persistence |
-| Frontend | Set up React + Vite project | Frontend app skeleton |
-| Frontend | Implement layout and navigation | App shell |
-| Frontend | Implement Provider Settings screen | Provider UI |
-| Frontend | Implement Prompt Presets screen | Preset UI |
-| Frontend | Implement Request Builder screen | JSON preview UI |
-| Frontend | Implement Chat/Test Runner screen | Request execution UI |
-| Frontend | Implement History screen | History UI |
-| DevOps | Add Dockerfiles and Docker Compose | Local container execution |
-| DevOps | Add GitHub Actions workflow | CI test/build results |
-| Documentation | Write execution guide and API notes | Updated README/docs |
-
-### 7.3 Schedule Draft
-
-The exact schedule should be adjusted to the course timeline.
-
-| Phase | Period | Main Goal | Deliverables |
+| 단계 | 기간 | 주요 목표 | 주 담당 |
 | --- | --- | --- | --- |
-| Proposal | ~ 2026-05-01 | Submit project proposal | Architecture diagram, frameworks, requirements, task plan |
-| Phase 1 | Week 1 | Initialize project and collaboration board | Repo structure, Issues, Projects |
-| Phase 2 | Week 2 | Implement backend and database basics | Flask API, SQLite models |
-| Phase 3 | Week 3 | Implement frontend core screens | Provider/Preset/Builder UI |
-| Phase 4 | Week 4 | Implement request execution and history | Adapter, execute API, history UI |
-| Phase 5 | Week 5 | Add Docker and CI/CD | Docker Compose, GitHub Actions |
-| Phase 6 | Final Week | Test, polish, document, prepare presentation | Final README, report, demo |
-
-### 7.4 Definition of Done
-
-An MVP task is considered complete when:
-
-- The related Issue is linked to a Pull Request.
-- The implementation satisfies the Issue requirements.
-- Basic test or manual verification is documented.
-- The PR is reviewed and merged.
-- Related documentation is updated if needed.
-- The GitHub Project item is moved to `Done`.
-
-## 8. Collaboration Plan
-
-PromptDeck will use GitHub collaboration tools as follows.
-
-| Tool | Usage |
-| --- | --- |
-| GitHub Issues | Track features, bugs, documentation tasks, DevOps tasks |
-| GitHub Pull Requests | Review and merge each feature or document change |
-| GitHub Projects | Manage progress with Backlog, Todo, In Progress, Review, Done |
-| Branches | Use feature branches such as `feature/provider-crud` and `docs/project-proposal` |
-| Commits | Use concise conventional-style messages such as `feat: add provider API` |
-
-## 9. Risks and Mitigation
-
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Provider API differences | Request execution may take longer than expected | Implement a common adapter interface and prioritize Custom/OpenAI-compatible execution |
-| API key exposure | Security and privacy issue | Store keys locally, ignore secret files, return masked key status only |
-| Scope creep | MVP may not be completed | Separate Must/Should/Could features and finish Must items first |
-| Frontend/backend integration delay | Demo instability | Agree on API draft early and use mock data where needed |
-| Docker/CI setup delay | Technical requirement risk | Add minimal Docker Compose and GitHub Actions early |
-
-## 10. Proposal Submission Checklist
-
-- [ ] System architecture diagram is included.
-- [ ] Frameworks to be used are listed with reasons.
-- [ ] Functional and non-functional requirements are listed.
-- [ ] MVP scope and excluded features are clear.
-- [ ] Project plan includes task assignments.
-- [ ] Collaboration plan mentions Issues, PRs, and Projects.
-- [ ] Docker and CI/CD plan is included.
-- [ ] Risks and mitigation strategies are included.
-- [ ] Team member names replace placeholder owners.
+| 제안서 제출 | ~ 2026-05-01 | 아키텍처 다이어그램, 사용 기술, 요구사항, 역할 분담을 포함한 제안서 제출 | 전체 |
+| 1단계 | Week 1 | 프로젝트 구조 생성, Issues/Projects 구성, 협업 규칙 정리 | 전체 |
+| 2단계 | Week 2 | Java Spring API 기본 구조와 MySQL 스키마 구현 | Backend, Database & Docker |
+| 3단계 | Week 3 | React 로그인, Provider, 프리셋, 요청 빌더 화면 구현 | Frontend |
+| 4단계 | Week 4 | 요청 미리보기, 요청 실행 흐름, Provider Adapter, 히스토리 UI 구현 | Backend, Frontend |
+| 5단계 | Week 5 | Docker, GCP 배포 설정, CI/CD, 데이터 저장 환경 구성 | Database & Docker |
+| 6단계 | Final Week | 테스트, 문서 정리, 시연 및 발표 준비 | 전체 |
