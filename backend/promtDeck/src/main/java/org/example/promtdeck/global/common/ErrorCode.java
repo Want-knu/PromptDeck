@@ -30,7 +30,15 @@ public enum ErrorCode {
     // 기타 인증 관련
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_010", "인증이 필요합니다."),
 
+    // Provider 관련
+    PROVIDER_KEY_NOT_FOUND(HttpStatus.NOT_FOUND, "PROVIDER_001", "Provider API Key를 찾을 수 없습니다."),
+    UNSUPPORTED_PROVIDER(HttpStatus.BAD_REQUEST, "PROVIDER_002", "지원하지 않는 Provider입니다."),
+    PROVIDER_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "PROVIDER_003", "Provider 설정을 찾을 수 없습니다."),
+    PROVIDER_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "PROVIDER_004", "Provider Key와 Provider 설정의 타입이 일치하지 않습니다."),
+    INVALID_PROVIDER_TEMPLATE(HttpStatus.BAD_REQUEST, "PROVIDER_005", "Provider 요청 템플릿 형식이 올바르지 않습니다."),
+
     // 서버 오류
+    CONFLICT_RESOURCE(HttpStatus.CONFLICT, "COMMON_002", "다른 요청에 의해 데이터가 변경되었습니다. 다시 조회 후 시도해주세요."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_001", "서버 내부 오류가 발생했습니다.");
 
 

@@ -6,6 +6,9 @@ import org.example.promtdeck.domain.provider.type.ProviderType;
 
 public record ProviderKeyUpdateRequest(
         @NotNull
+        Long version,
+
+        @NotNull
         ProviderType providerType,
 
         @NotBlank
