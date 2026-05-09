@@ -7,6 +7,8 @@ import org.example.promtdeck.domain.provider.type.HttpMethodType;
 import org.example.promtdeck.domain.provider.type.ProviderType;
 
 public record ProviderSettingCreateRequest(
+        Long organizationId,
+
         @NotNull
         ProviderType providerType,
 
@@ -32,6 +34,8 @@ public record ProviderSettingCreateRequest(
         String queryParamsJson,
 
         String bodyTemplateJson,
+
+        String optionSchemaJson,
 
         String responsePath
 ) {

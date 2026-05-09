@@ -8,6 +8,7 @@ public record ProviderExecuteResponse(
         int statusCode,
         boolean success,
         String responseBody,
+        String parsedResponse,
         String errorMessage
 ) {
 }

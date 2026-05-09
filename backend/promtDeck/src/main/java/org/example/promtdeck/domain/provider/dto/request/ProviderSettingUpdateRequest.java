@@ -32,6 +32,8 @@ public record ProviderSettingUpdateRequest(
 
         String bodyTemplateJson,
 
+        String optionSchemaJson,
+
         String responsePath
 ) {
 }

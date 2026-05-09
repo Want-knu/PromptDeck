@@ -1,6 +1,8 @@
 package org.example.promtdeck.domain.provider.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.promtdeck.domain.organization.entity.Organization;
+import org.example.promtdeck.domain.organization.service.OrganizationService;
 import org.example.promtdeck.domain.provider.dto.request.ProviderSettingCreateRequest;
 import org.example.promtdeck.domain.provider.dto.request.ProviderSettingUpdateRequest;
 import org.example.promtdeck.domain.provider.dto.response.ProviderSettingResponse;
@@ -21,10 +23,12 @@ public class ProviderSettingService {
 
     private final UserRepository userRepository;
     private final ProviderSettingRepository providerSettingRepository;
+    private final OrganizationService organizationService;
 
     @Transactional
     public ProviderSettingResponse create(Long userId, ProviderSettingCreateRequest request) {
         User user = getUser(userId);
+        Organization organization = organizationService.getAccessibleOrganization(request.organizationId(), user);
 
         ProviderSetting setting = ProviderSetting.create(
                 request.providerType(),
@@ -38,8 +42,10 @@ public class ProviderSettingService {
                 request.headersJson(),
                 request.queryParamsJson(),
                 request.bodyTemplateJson(),
+                request.optionSchemaJson(),
                 request.responsePath(),
-                user
+                user,
+                organization
         );
 
         return ProviderSettingResponse.from(providerSettingRepository.save(setting));
@@ -49,8 +55,9 @@ public class ProviderSettingService {
     public List<ProviderSettingResponse> findAll(Long userId) {
         User user = getUser(userId);
 
-        return providerSettingRepository.findAllByUser(user)
+        return providerSettingRepository.findAll()
                 .stream()
+                .filter(setting -> canAccess(setting, user))
                 .map(ProviderSettingResponse::from)
                 .toList();
     }
@@ -59,8 +66,7 @@ public class ProviderSettingService {
     public ProviderSettingResponse findOne(Long userId, Long providerSettingId) {
         User user = getUser(userId);
 
-        ProviderSetting setting = providerSettingRepository.findByIdAndUser(providerSettingId, user)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROVIDER_SETTING_NOT_FOUND));
+        ProviderSetting setting = getAccessibleSetting(providerSettingId, user);
 
         return ProviderSettingResponse.from(setting);
     }
@@ -69,8 +75,7 @@ public class ProviderSettingService {
     public ProviderSettingResponse update(Long userId, Long providerSettingId, ProviderSettingUpdateRequest request) {
         User user = getUser(userId);
 
-        ProviderSetting setting = providerSettingRepository.findByIdAndUser(providerSettingId, user)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROVIDER_SETTING_NOT_FOUND));
+        ProviderSetting setting = getAccessibleSetting(providerSettingId, user);
 
         validateVersion(setting.getVersion(), request.version());
 
@@ -85,6 +90,7 @@ public class ProviderSettingService {
                 request.headersJson(),
                 request.queryParamsJson(),
                 request.bodyTemplateJson(),
+                request.optionSchemaJson(),
                 request.responsePath()
         );
 
@@ -95,10 +101,28 @@ public class ProviderSettingService {
     public void delete(Long userId, Long providerSettingId) {
         User user = getUser(userId);
 
-        ProviderSetting setting = providerSettingRepository.findByIdAndUser(providerSettingId, user)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROVIDER_SETTING_NOT_FOUND));
+        ProviderSetting setting = getAccessibleSetting(providerSettingId, user);
 
         providerSettingRepository.delete(setting);
+    }
+
+    public ProviderSetting getAccessibleSetting(Long providerSettingId, User user) {
+        ProviderSetting setting = providerSettingRepository.findById(providerSettingId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROVIDER_SETTING_NOT_FOUND));
+
+        if (!canAccess(setting, user)) {
+            throw new CustomException(ErrorCode.PROVIDER_SETTING_NOT_FOUND);
+        }
+
+        return setting;
+    }
+
+    private boolean canAccess(ProviderSetting setting, User user) {
+        if (setting.getUser().getId().equals(user.getId())) {
+            return true;
+        }
+
+        return organizationService.canAccess(setting.getOrganization(), user);
     }
 
     private User getUser(Long userId) {

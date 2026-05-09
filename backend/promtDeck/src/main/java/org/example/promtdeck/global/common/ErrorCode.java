@@ -36,6 +36,9 @@ public enum ErrorCode {
     PROVIDER_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "PROVIDER_003", "Provider 설정을 찾을 수 없습니다."),
     PROVIDER_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "PROVIDER_004", "Provider Key와 Provider 설정의 타입이 일치하지 않습니다."),
     INVALID_PROVIDER_TEMPLATE(HttpStatus.BAD_REQUEST, "PROVIDER_005", "Provider 요청 템플릿 형식이 올바르지 않습니다."),
+    INVALID_PROVIDER_OPTION(HttpStatus.BAD_REQUEST, "PROVIDER_006", "Provider 옵션 값이 올바르지 않습니다."),
+    INVALID_RESPONSE_PATH(HttpStatus.BAD_REQUEST, "PROVIDER_007", "Provider 응답 경로가 올바르지 않습니다."),
+    ORGANIZATION_NOT_FOUND(HttpStatus.NOT_FOUND, "ORG_001", "조직을 찾을 수 없습니다."),
 
     // 서버 오류
     CONFLICT_RESOURCE(HttpStatus.CONFLICT, "COMMON_002", "다른 요청에 의해 데이터가 변경되었습니다. 다시 조회 후 시도해주세요."),

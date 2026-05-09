@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.promtdeck.domain.provider.dto.request.ProviderExecuteRequest;
+import org.example.promtdeck.domain.provider.dto.response.ProviderExecutionHistoryResponse;
 import org.example.promtdeck.domain.provider.dto.response.ProviderExecuteResponse;
 import org.example.promtdeck.domain.provider.dto.response.ProviderPreviewResponse;
 import org.example.promtdeck.domain.provider.service.RequestExecutionService;
@@ -19,6 +20,18 @@ import org.springframework.web.bind.annotation.*;
 public class ProviderExecutionController {
 
     private final RequestExecutionService requestExecutionService;
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<java.util.List<ProviderExecutionHistoryResponse>>> findHistory(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(required = false) Long organizationId
+    ) {
+        java.util.List<ProviderExecutionHistoryResponse> response = requestExecutionService.findHistory(userId, organizationId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Provider 실행 이력을 조회했습니다.", response)
+        );
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<ProviderExecuteResponse>> execute(

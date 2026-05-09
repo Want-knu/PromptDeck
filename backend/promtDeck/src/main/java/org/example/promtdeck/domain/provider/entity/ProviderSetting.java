@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.example.promtdeck.domain.organization.entity.Organization;
 import org.example.promtdeck.domain.provider.type.AuthType;
 import org.example.promtdeck.domain.provider.type.HttpMethodType;
 import org.example.promtdeck.domain.provider.type.ProviderType;
@@ -59,12 +60,19 @@ public class ProviderSetting {
     @Column(columnDefinition = "TEXT")
     private String bodyTemplateJson;
 
+    @Column(columnDefinition = "TEXT")
+    private String optionSchemaJson;
+
     @Column(length = 300)
     private String responsePath;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
 
     private ProviderSetting(
             ProviderType providerType,
@@ -78,8 +86,10 @@ public class ProviderSetting {
             String headersJson,
             String queryParamsJson,
             String bodyTemplateJson,
+            String optionSchemaJson,
             String responsePath,
-            User user
+            User user,
+            Organization organization
     ) {
         this.providerType = providerType;
         this.displayName = displayName;
@@ -92,8 +102,10 @@ public class ProviderSetting {
         this.headersJson = headersJson;
         this.queryParamsJson = queryParamsJson;
         this.bodyTemplateJson = bodyTemplateJson;
+        this.optionSchemaJson = optionSchemaJson;
         this.responsePath = responsePath;
         this.user = user;
+        this.organization = organization;
     }
 
     public static ProviderSetting create(
@@ -108,8 +120,10 @@ public class ProviderSetting {
             String headersJson,
             String queryParamsJson,
             String bodyTemplateJson,
+            String optionSchemaJson,
             String responsePath,
-            User user
+            User user,
+            Organization organization
     ) {
         return new ProviderSetting(
                 providerType,
@@ -123,8 +137,10 @@ public class ProviderSetting {
                 headersJson,
                 queryParamsJson,
                 bodyTemplateJson,
+                optionSchemaJson,
                 responsePath,
-                user
+                user,
+                organization
         );
     }
 
@@ -139,6 +155,7 @@ public class ProviderSetting {
             String headersJson,
             String queryParamsJson,
             String bodyTemplateJson,
+            String optionSchemaJson,
             String responsePath
     ) {
         this.displayName = displayName;
@@ -151,6 +168,7 @@ public class ProviderSetting {
         this.headersJson = headersJson;
         this.queryParamsJson = queryParamsJson;
         this.bodyTemplateJson = bodyTemplateJson;
+        this.optionSchemaJson = optionSchemaJson;
         this.responsePath = responsePath;
     }
 }

@@ -39,6 +39,7 @@ public abstract class AbstractRestProviderClient implements ProviderClient {
                     response.getStatusCode().value(),
                     response.getStatusCode().is2xxSuccessful(),
                     response.getBody(),
+                    null,
                     null
             );
         } catch (RestClientResponseException e) {
@@ -48,6 +49,7 @@ public abstract class AbstractRestProviderClient implements ProviderClient {
                     e.getStatusCode().value(),
                     false,
                     e.getResponseBodyAsString(),
+                    null,
                     e.getMessage()
             );
         } catch (Exception e) {
@@ -56,6 +58,7 @@ public abstract class AbstractRestProviderClient implements ProviderClient {
                     setting.getModel(),
                     500,
                     false,
+                    null,
                     null,
                     e.getMessage()
             );
