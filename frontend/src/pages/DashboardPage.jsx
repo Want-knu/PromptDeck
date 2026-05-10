@@ -9,22 +9,22 @@ const FEATURES = [
     label: '관리하기'
   },
   {
-    title: '프롬프트 프리셋',
-    description: '자주 사용하는 system prompt와 user prompt 템플릿을 프리셋으로 저장합니다.',
-    link: '#',
-    label: '준비 중'
+    title: 'Provider 설정 관리',
+    description: '엔드포인트, 인증 방식, 바디 템플릿 등 Provider 호출 설정 프리셋을 만들고 관리합니다.',
+    link: '/provider-settings',
+    label: '관리하기'
   },
   {
     title: '요청 실행',
-    description: 'Provider와 프리셋을 선택하고 LLM API 요청을 빌드·실행합니다.',
-    link: '#',
-    label: '준비 중'
+    description: 'Provider Key와 설정을 선택하고 프롬프트를 입력해 LLM API 요청을 빌드·실행합니다.',
+    link: '/execution',
+    label: '실행하기'
   },
   {
     title: '요청 기록',
-    description: '과거 요청의 Provider, 프리셋, 요청/응답 내용, 오류를 확인합니다.',
-    link: '#',
-    label: '준비 중'
+    description: '과거 요청의 Provider, 설정, 요청/응답 내용, 소요 시간, 오류를 확인합니다.',
+    link: '/history',
+    label: '기록 보기'
   }
 ]
 
