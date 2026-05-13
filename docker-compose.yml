@@ -33,6 +33,8 @@ services:
       DB_USERNAME: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      PROVIDER_API_KEY_PASSWORD: ${PROVIDER_API_KEY_PASSWORD}
+      PROVIDER_API_KEY_SALT: ${PROVIDER_API_KEY_SALT}
     depends_on:
       mysql:
         condition: service_healthy
