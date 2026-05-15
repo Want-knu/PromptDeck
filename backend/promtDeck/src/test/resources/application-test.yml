@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:promtdeck-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+jwt:
+  secret: test_jwt_secret_at_least_32_chars_long
+  access-token-expiration: 1800000
+  refresh-token-expiration: 1209600000
+
+auth:
+  allowed-origins: http://localhost:5173
+  refresh-cookie-secure: false
+  refresh-cookie-same-site: Lax
+
+provider:
+  api-key-password: test_provider_password_32_chars!!
+  api-key-salt: test_provider_salt

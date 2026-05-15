@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.promtdeck.domain.provider.dto.request.ProviderSettingCreateRequest;
 import org.example.promtdeck.domain.provider.dto.request.ProviderSettingUpdateRequest;
+import org.example.promtdeck.domain.provider.dto.response.ProviderSettingOptionsResponse;
 import org.example.promtdeck.domain.provider.dto.response.ProviderSettingResponse;
 import org.example.promtdeck.domain.provider.service.ProviderSettingService;
 import org.example.promtdeck.global.common.ApiResponse;
@@ -42,6 +43,15 @@ public class ProviderSettingController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Provider 설정 목록을 조회했습니다.", response)
+        );
+    }
+
+    @GetMapping("/options")
+    public ResponseEntity<ApiResponse<ProviderSettingOptionsResponse>> findOptions() {
+        ProviderSettingOptionsResponse response = providerSettingService.findOptions();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Provider 설정 옵션을 조회했습니다.", response)
         );
     }
 

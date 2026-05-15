@@ -5,6 +5,7 @@ import org.example.promtdeck.domain.organization.entity.Organization;
 import org.example.promtdeck.domain.organization.service.OrganizationService;
 import org.example.promtdeck.domain.provider.dto.request.ProviderSettingCreateRequest;
 import org.example.promtdeck.domain.provider.dto.request.ProviderSettingUpdateRequest;
+import org.example.promtdeck.domain.provider.dto.response.ProviderSettingOptionsResponse;
 import org.example.promtdeck.domain.provider.dto.response.ProviderSettingResponse;
 import org.example.promtdeck.domain.provider.entity.ProviderSetting;
 import org.example.promtdeck.domain.provider.repository.ProviderSettingRepository;
@@ -29,10 +30,8 @@ public class ProviderSettingService {
     public ProviderSettingResponse create(Long userId, ProviderSettingCreateRequest request) {
         User user = getUser(userId);
         Organization organization = organizationService.getAccessibleOrganization(request.organizationId(), user);
-
-        ProviderSetting setting = ProviderSetting.create(
+        ProviderSettingDefaults.ResolvedSetting resolved = ProviderSettingDefaults.resolve(
                 request.providerType(),
-                request.displayName(),
                 request.model(),
                 request.endpoint(),
                 request.method(),
@@ -43,7 +42,23 @@ public class ProviderSettingService {
                 request.queryParamsJson(),
                 request.bodyTemplateJson(),
                 request.optionSchemaJson(),
-                request.responsePath(),
+                request.responsePath()
+        );
+
+        ProviderSetting setting = ProviderSetting.create(
+                request.providerType(),
+                request.displayName(),
+                request.model(),
+                resolved.endpoint(),
+                resolved.method(),
+                resolved.authType(),
+                resolved.authHeaderName(),
+                resolved.authQueryParamName(),
+                resolved.headersJson(),
+                resolved.queryParamsJson(),
+                resolved.bodyTemplateJson(),
+                resolved.optionSchemaJson(),
+                resolved.responsePath(),
                 user,
                 organization
         );
@@ -78,9 +93,8 @@ public class ProviderSettingService {
         ProviderSetting setting = getAccessibleSetting(providerSettingId, user);
 
         validateVersion(setting.getVersion(), request.version());
-
-        setting.update(
-                request.displayName(),
+        ProviderSettingDefaults.ResolvedSetting resolved = ProviderSettingDefaults.resolve(
+                setting.getProviderType(),
                 request.model(),
                 request.endpoint(),
                 request.method(),
@@ -94,7 +108,26 @@ public class ProviderSettingService {
                 request.responsePath()
         );
 
+        setting.update(
+                request.displayName(),
+                request.model(),
+                resolved.endpoint(),
+                resolved.method(),
+                resolved.authType(),
+                resolved.authHeaderName(),
+                resolved.authQueryParamName(),
+                resolved.headersJson(),
+                resolved.queryParamsJson(),
+                resolved.bodyTemplateJson(),
+                resolved.optionSchemaJson(),
+                resolved.responsePath()
+        );
+
         return ProviderSettingResponse.from(setting);
+    }
+
+    public ProviderSettingOptionsResponse findOptions() {
+        return ProviderSettingDefaults.options();
     }
 
     @Transactional

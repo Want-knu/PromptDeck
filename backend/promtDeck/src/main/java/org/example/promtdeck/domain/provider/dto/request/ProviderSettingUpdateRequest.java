@@ -15,7 +15,6 @@ public record ProviderSettingUpdateRequest(
         @NotBlank
         String model,
 
-        @NotBlank
         String endpoint,
 
         HttpMethodType method,

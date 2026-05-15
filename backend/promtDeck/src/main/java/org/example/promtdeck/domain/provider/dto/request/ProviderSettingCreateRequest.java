@@ -18,7 +18,6 @@ public record ProviderSettingCreateRequest(
         @NotBlank
         String model,
 
-        @NotBlank
         String endpoint,
 
         HttpMethodType method,
