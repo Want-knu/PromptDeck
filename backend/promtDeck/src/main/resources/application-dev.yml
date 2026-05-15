@@ -19,6 +19,12 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   access-token-expiration: 1800000
+  refresh-token-expiration: 1209600000
+
+auth:
+  allowed-origins: ${AUTH_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+  refresh-cookie-secure: false
+  refresh-cookie-same-site: Lax
 
 provider:
   api-key-password: ${PROVIDER_API_KEY_PASSWORD}

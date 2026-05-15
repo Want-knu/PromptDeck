@@ -52,7 +52,9 @@ public class RequestExecutionService {
 
         ProviderExecuteResponse response = client.execute(context.setting(), context.httpRequest());
         long durationMs = System.currentTimeMillis() - startedAt;
-        String parsedResponse = responsePathExtractor.extract(response.responseBody(), context.setting().getResponsePath());
+        String parsedResponse = response.success()
+                ? responsePathExtractor.extract(response.responseBody(), context.setting().getResponsePath())
+                : null;
         ProviderExecuteResponse parsed = new ProviderExecuteResponse(
                 response.providerType(),
                 response.model(),

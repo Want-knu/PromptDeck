@@ -26,9 +26,12 @@ public enum ErrorCode {
     // JWT 관련
     TOKEN_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH_009", "토큰 생성에 실패했습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN,"AUTH_010","접근 권한이 없습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_011", "유효하지 않은 토큰입니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_012", "만료된 토큰입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_013", "유효하지 않은 refresh token입니다."),
 
     // 기타 인증 관련
-    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_010", "인증이 필요합니다."),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_014", "인증이 필요합니다."),
 
     // Provider 관련
     PROVIDER_KEY_NOT_FOUND(HttpStatus.NOT_FOUND, "PROVIDER_001", "Provider API Key를 찾을 수 없습니다."),

@@ -1,37 +1,28 @@
+import { apiFetch, authHeaders, readJsonResponse } from './client'
+
 const BASE = '/api/organizations'
 
-function authHeaders() {
-  const token = localStorage.getItem('token')
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  }
-}
-
 export async function getOrganizations() {
-  const res = await fetch(BASE, { headers: authHeaders() })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message || '조회 실패')
+  const res = await apiFetch(BASE, { headers: authHeaders() })
+  const data = await readJsonResponse(res, '조회 실패')
   return data.data
 }
 
 export async function createOrganization(name) {
-  const res = await fetch(BASE, {
+  const res = await apiFetch(BASE, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ name })
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message || '생성 실패')
+  const data = await readJsonResponse(res, '생성 실패')
   return data.data
 }
 
 export async function addOrganizationMember(organizationId, email) {
-  const res = await fetch(`${BASE}/${organizationId}/members`, {
+  const res = await apiFetch(`${BASE}/${organizationId}/members`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ email })
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message || '멤버 추가 실패')
+  await readJsonResponse(res, '멤버 추가 실패')
 }

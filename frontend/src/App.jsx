@@ -6,6 +6,7 @@ import ProvidersPage from './pages/ProvidersPage'
 import ProviderSettingsPage from './pages/ProviderSettingsPage'
 import ExecutionPage from './pages/ExecutionPage'
 import HistoryPage from './pages/HistoryPage'
+import OrganizationsPage from './pages/OrganizationsPage'
 import PrivateRoute from './components/PrivateRoute'
 
 function Private({ children }) {
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/provider-settings" element={<Private><ProviderSettingsPage /></Private>} />
         <Route path="/execution" element={<Private><ExecutionPage /></Private>} />
         <Route path="/history" element={<Private><HistoryPage /></Private>} />
+        <Route path="/organizations" element={<Private><OrganizationsPage /></Private>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

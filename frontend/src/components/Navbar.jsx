@@ -1,8 +1,15 @@
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../api/auth'
+import { getAccessToken, subscribeAuth } from '../api/client'
 
 export default function Navbar() {
   const navigate = useNavigate()
+  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(getAccessToken()))
+
+  useEffect(() => {
+    return subscribeAuth(setIsLoggedIn)
+  }, [])
 
   async function handleLogout() {
     await logout()
@@ -13,9 +20,17 @@ export default function Navbar() {
     <nav style={styles.nav}>
       <Link to="/" style={styles.brand}>PromptDeck</Link>
       <div style={styles.links}>
-        <Link to="/" style={styles.link}>대시보드</Link>
-        <Link to="/providers" style={styles.link}>Provider Keys</Link>
-        <button style={styles.logoutBtn} onClick={handleLogout}>로그아웃</button>
+        {isLoggedIn && (
+          <>
+            <Link to="/" style={styles.link}>대시보드</Link>
+            <Link to="/providers" style={styles.link}>Provider Keys</Link>
+            <Link to="/organizations" style={styles.link}>조직</Link>
+            <button style={styles.logoutBtn} onClick={handleLogout}>로그아웃</button>
+          </>
+        )}
+        {!isLoggedIn && (
+          <Link to="/login" style={styles.link}>로그인</Link>
+        )}
       </div>
     </nav>
   )

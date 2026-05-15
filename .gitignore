@@ -48,3 +48,9 @@ mysql-data/
 *.swp
 *.swo
 *~
+
+# ===========================
+# Frontend
+# ===========================
+frontend/node_modules/
+frontend/dist/

@@ -7,19 +7,16 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.promtdeck.domain.auth.dto.LoginRequest;
-import org.example.promtdeck.domain.auth.dto.LoginResponse;
-import org.example.promtdeck.domain.auth.dto.SignupRequest;
-import org.example.promtdeck.domain.auth.dto.SignupResponse;
+import org.example.promtdeck.domain.auth.dto.*;
 import org.example.promtdeck.domain.auth.service.AuthService;
+import org.example.promtdeck.domain.auth.service.RefreshTokenCookieProvider;
 import org.example.promtdeck.global.common.ApiResponse;
 import org.example.promtdeck.global.common.ErrorResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Auth", description = "회원가입, 로그인, 로그아웃 API")
 public class AuthController {
     private final AuthService authService;
+    private final RefreshTokenCookieProvider refreshTokenCookieProvider;
 
     @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름으로 새 사용자를 생성합니다.")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -76,16 +74,29 @@ public class AuthController {
     )
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
+        LoginTokenResult result = authService.login(request);
+        ResponseCookie cookie = refreshTokenCookieProvider.createCookie(result.refreshToken());
 
-        return ResponseEntity.ok(
-                ApiResponse.success("로그인에 성공했습니다.", response)
-        );
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.success("로그인에 성공했습니다.",result.response()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<TokenRefreshResponse>> refresh(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken
+    ) {
+        TokenRefreshResult result = authService.refresh(refreshToken);
+        ResponseCookie cookie = refreshTokenCookieProvider.createCookie(result.refreshToken());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.success("토큰이 재발급되었습니다.", result.response()));
     }
 
     @Operation(
             summary = "로그아웃",
-            description = "Stateless JWT 방식이므로 서버에서는 별도 저장 상태를 변경하지 않습니다. 클라이언트가 토큰을 삭제해야 합니다.",
+            description = "refresh token을 폐기하고 refreshToken HttpOnly cookie를 만료시킵니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -98,11 +109,14 @@ public class AuthController {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
     )
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
-        authService.logout();
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken
+    ) {
+        authService.logout(refreshToken);
+        ResponseCookie deleteCookie = refreshTokenCookieProvider.deleteCookie();
 
-        return ResponseEntity.ok(
-                ApiResponse.success("로그아웃에 성공했습니다.")
-        );
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .body(ApiResponse.success("로그아웃에 성공했습니다."));
     }
 }
