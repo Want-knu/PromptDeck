@@ -1,9 +1,15 @@
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../api/auth'
+import { getAccessToken, subscribeAuth } from '../api/client'
 
 export default function Navbar() {
   const navigate = useNavigate()
-  const isLoggedIn = !!localStorage.getItem('token')
+  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(getAccessToken()))
+
+  useEffect(() => {
+    return subscribeAuth(setIsLoggedIn)
+  }, [])
 
   async function handleLogout() {
     await logout()

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../api/auth'
+import { getAccessToken, refreshAccessToken, setAccessToken } from '../api/client'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -9,13 +10,32 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    if (getAccessToken()) {
+      navigate('/', { replace: true })
+      return
+    }
+
+    let ignore = false
+
+    refreshAccessToken().then(refreshed => {
+      if (refreshed && !ignore) {
+        navigate('/', { replace: true })
+      }
+    })
+
+    return () => {
+      ignore = true
+    }
+  }, [navigate])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
       const res = await login(email, password)
-      localStorage.setItem('token', res.data.accessToken)
+      setAccessToken(res.data.accessToken)
       navigate('/')
     } catch (err) {
       setError(err.message)
