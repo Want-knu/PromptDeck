@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import { getProviderKeys, createProviderKey, deleteProviderKey } from '../api/providers'
-import { PROVIDER_TYPES } from '../constants/providerOptions'
+import { useProviderOptions } from '../hooks/useProviderOptions'
 
 export default function ProvidersPage() {
   const [keys, setKeys] = useState([])
@@ -11,6 +11,8 @@ export default function ProvidersPage() {
   const [form, setForm] = useState({ providerType: 'OPENAI', apiKey: '', displayName: '' })
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+
+  const { providerTypes } = useProviderOptions('OPENAI')
 
   useEffect(() => {
     fetchKeys()
@@ -75,7 +77,7 @@ export default function ProvidersPage() {
               value={form.providerType}
               onChange={e => setForm(p => ({ ...p, providerType: e.target.value }))}
             >
-              {PROVIDER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {providerTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <label style={styles.label}>표시 이름</label>
             <input

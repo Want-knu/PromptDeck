@@ -7,39 +7,45 @@ import {
   updateProviderSetting,
   deleteProviderSetting
 } from '../api/providerSettings'
-import {
-  PROVIDER_TYPES,
-  HTTP_METHODS,
-  AUTH_TYPES,
-  PROVIDER_MODELS,
-  PROVIDER_PRESETS,
-} from '../constants/providerOptions'
 import { useProviderOptions } from '../hooks/useProviderOptions'
-
-const OPENAI_PRESET = PROVIDER_PRESETS.OPENAI
-
-const EMPTY_FORM = {
-  providerType: 'OPENAI',
-  displayName: '',
-  model: PROVIDER_MODELS.OPENAI[0],
-  ...OPENAI_PRESET,
-  headersJson: '',
-  queryParamsJson: '',
-  optionSchemaJson: '',
-}
 
 export default function ProviderSettingsPage() {
   const [settings, setSettings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [mode, setMode] = useState('list') // 'list' | 'create' | 'edit'
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState(null)   // optionsReady 전까지 null
   const [editTarget, setEditTarget] = useState(null)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [tab, setTab] = useState('basic') // 'basic' | 'advanced'
 
-  const { changeProviderType } = useProviderOptions('OPENAI')
+  const {
+    changeProviderType,
+    optionsReady,
+    providerTypes,
+    httpMethods,
+    authTypes,
+    providerModels,
+    providerPresets,
+  } = useProviderOptions('OPENAI')
+
+  // optionsReady 시점에 EMPTY_FORM 초기화 (사용자가 아직 create/edit 진입 안 했을 때만)
+  useEffect(() => {
+    if (optionsReady && form === null) {
+      const preset = providerPresets.OPENAI ?? {}
+      const models = providerModels.OPENAI ?? []
+      setForm({
+        providerType: 'OPENAI',
+        displayName: '',
+        model: models[0] ?? '',
+        ...preset,
+        headersJson: '',
+        queryParamsJson: '',
+        optionSchemaJson: '',
+      })
+    }
+  }, [optionsReady, providerPresets, providerModels, form])
 
   useEffect(() => { fetchSettings() }, [])
 
@@ -57,7 +63,17 @@ export default function ProviderSettingsPage() {
   }
 
   function openCreate() {
-    setForm(EMPTY_FORM)
+    const preset = providerPresets.OPENAI ?? {}
+    const models = providerModels.OPENAI ?? []
+    setForm({
+      providerType: 'OPENAI',
+      displayName: '',
+      model: models[0] ?? '',
+      ...preset,
+      headersJson: '',
+      queryParamsJson: '',
+      optionSchemaJson: '',
+    })
     setEditTarget(null)
     setFormError('')
     setTab('basic')
@@ -133,8 +149,18 @@ export default function ProviderSettingsPage() {
   const set = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }))
 
   if (mode === 'create' || mode === 'edit') {
+    // options API 응답 대기 중
+    if (form === null) {
+      return (
+        <>
+          <Navbar />
+          <main style={s.main}><p style={s.info}>옵션 불러오는 중...</p></main>
+        </>
+      )
+    }
+
     const isCustom = form.providerType === 'CUSTOM'
-    const availableModels = PROVIDER_MODELS[form.providerType] ?? []
+    const availableModels = providerModels[form.providerType] ?? []
 
     return (
       <>
@@ -162,7 +188,7 @@ export default function ProviderSettingsPage() {
               <>
                 <FormField label="Provider 타입">
                   <select style={s.input} value={form.providerType} onChange={handleProviderTypeChange}>
-                    {PROVIDER_TYPES.map(t => <option key={t}>{t}</option>)}
+                    {providerTypes.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </FormField>
                 <FormField label="표시 이름">
@@ -194,12 +220,12 @@ export default function ProviderSettingsPage() {
                 </FormField>
                 <FormField label="HTTP 메서드" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.method} onChange={set('method')} disabled={!isCustom}>
-                    {HTTP_METHODS.map(m => <option key={m}>{m}</option>)}
+                    {httpMethods.map(m => <option key={m}>{m}</option>)}
                   </select>
                 </FormField>
                 <FormField label="인증 방식" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.authType} onChange={set('authType')} disabled={!isCustom}>
-                    {AUTH_TYPES.map(a => <option key={a}>{a}</option>)}
+                    {authTypes.map(a => <option key={a}>{a}</option>)}
                   </select>
                 </FormField>
                 {form.authType === 'HEADER' && (
