@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import FormField from '../components/ui/FormField'
 import {
   getProviderSettings,
   createProviderSetting,
@@ -13,6 +14,7 @@ import {
   PROVIDER_MODELS,
   PROVIDER_PRESETS,
 } from '../constants/providerOptions'
+import { useProviderOptions } from '../hooks/useProviderOptions'
 
 const OPENAI_PRESET = PROVIDER_PRESETS.OPENAI
 
@@ -36,6 +38,8 @@ export default function ProviderSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [tab, setTab] = useState('basic') // 'basic' | 'advanced'
+
+  const { changeProviderType } = useProviderOptions('OPENAI')
 
   useEffect(() => { fetchSettings() }, [])
 
@@ -89,31 +93,7 @@ export default function ProviderSettingsPage() {
 
   // providerType 변경 시 연관 필드를 프리셋으로 초기화
   function handleProviderTypeChange(e) {
-    const newType = e.target.value
-    const preset = PROVIDER_PRESETS[newType]
-    const models = PROVIDER_MODELS[newType] ?? []
-    if (preset) {
-      setForm(p => ({
-        ...p,
-        providerType: newType,
-        model: models[0],
-        ...preset,
-      }))
-    } else {
-      // CUSTOM: 연관 필드 초기화
-      setForm(p => ({
-        ...p,
-        providerType: newType,
-        model: '',
-        endpoint: '',
-        method: 'POST',
-        authType: 'BEARER',
-        authHeaderName: '',
-        authQueryParamName: '',
-        responsePath: '',
-        bodyTemplateJson: '',
-      }))
-    }
+    changeProviderType(e.target.value, setForm)
   }
 
   async function handleSubmit(e) {
@@ -180,15 +160,15 @@ export default function ProviderSettingsPage() {
           <form onSubmit={handleSubmit} style={s.form}>
             {tab === 'basic' && (
               <>
-                <Field label="Provider 타입">
+                <FormField label="Provider 타입">
                   <select style={s.input} value={form.providerType} onChange={handleProviderTypeChange}>
                     {PROVIDER_TYPES.map(t => <option key={t}>{t}</option>)}
                   </select>
-                </Field>
-                <Field label="표시 이름">
+                </FormField>
+                <FormField label="표시 이름">
                   <input style={s.input} required value={form.displayName} onChange={set('displayName')} placeholder="My GPT-4 Setting" />
-                </Field>
-                <Field label="모델명">
+                </FormField>
+                <FormField label="모델명">
                   {isCustom ? (
                     <input style={s.input} required value={form.model} onChange={set('model')} placeholder="your-model-name" />
                   ) : (
@@ -196,38 +176,43 @@ export default function ProviderSettingsPage() {
                       {availableModels.map(m => <option key={m}>{m}</option>)}
                     </select>
                   )}
-                </Field>
-                <Field label="엔드포인트 URL" hint={!isCustom ? '프리셋 자동완성' : undefined}>
-                  <input
-                    style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }}
-                    required
-                    value={form.endpoint}
-                    onChange={set('endpoint')}
-                    disabled={!isCustom}
-                    placeholder={isCustom ? 'https://api.example.com/v1/chat' : undefined}
-                  />
-                </Field>
-                <Field label="HTTP 메서드" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                </FormField>
+                <FormField label="엔드포인트 URL" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                  {isCustom ? (
+                    <input
+                      style={s.input}
+                      required
+                      value={form.endpoint}
+                      onChange={set('endpoint')}
+                      placeholder="https://api.example.com/v1/chat"
+                    />
+                  ) : (
+                    <select style={{ ...s.input, ...s.inputLocked }} value={form.endpoint} onChange={set('endpoint')} disabled>
+                      <option value={form.endpoint}>{form.endpoint}</option>
+                    </select>
+                  )}
+                </FormField>
+                <FormField label="HTTP 메서드" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.method} onChange={set('method')} disabled={!isCustom}>
                     {HTTP_METHODS.map(m => <option key={m}>{m}</option>)}
                   </select>
-                </Field>
-                <Field label="인증 방식" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                </FormField>
+                <FormField label="인증 방식" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.authType} onChange={set('authType')} disabled={!isCustom}>
                     {AUTH_TYPES.map(a => <option key={a}>{a}</option>)}
                   </select>
-                </Field>
+                </FormField>
                 {form.authType === 'HEADER' && (
-                  <Field label="인증 헤더명">
+                  <FormField label="인증 헤더명">
                     <input style={s.input} value={form.authHeaderName} onChange={set('authHeaderName')} placeholder="X-API-Key" />
-                  </Field>
+                  </FormField>
                 )}
                 {form.authType === 'QUERY_PARAM' && (
-                  <Field label="인증 쿼리 파라미터명">
+                  <FormField label="인증 쿼리 파라미터명">
                     <input style={s.input} value={form.authQueryParamName} onChange={set('authQueryParamName')} placeholder="api_key" />
-                  </Field>
+                  </FormField>
                 )}
-                <Field label="응답 추출 경로 (JSONPath)" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                <FormField label="응답 추출 경로 (JSONPath)" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <input
                     style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }}
                     value={form.responsePath}
@@ -235,19 +220,19 @@ export default function ProviderSettingsPage() {
                     disabled={!isCustom}
                     placeholder={isCustom ? 'choices[0].message.content' : undefined}
                   />
-                </Field>
+                </FormField>
               </>
             )}
 
             {tab === 'advanced' && (
               <>
-                <Field label="헤더 JSON" hint="예: {&quot;X-Custom&quot;: &quot;value&quot;}">
+                <FormField label="헤더 JSON" hint={'예: {"X-Custom": "value"}'}>
                   <textarea style={s.textarea} value={form.headersJson} onChange={set('headersJson')} rows={3} />
-                </Field>
-                <Field label="쿼리 파라미터 JSON" hint="예: {&quot;version&quot;: &quot;2024-01&quot;}">
+                </FormField>
+                <FormField label="쿼리 파라미터 JSON" hint={'예: {"version": "2024-01"}'}>
                   <textarea style={s.textarea} value={form.queryParamsJson} onChange={set('queryParamsJson')} rows={3} />
-                </Field>
-                <Field label="바디 템플릿 JSON" hint={!isCustom ? '프리셋 자동완성 — 수정하려면 CUSTOM 타입을 사용하세요' : '{{prompt}}, {{model}} 등 변수 사용 가능'}>
+                </FormField>
+                <FormField label="바디 템플릿 JSON" hint={!isCustom ? '프리셋 자동완성 — 수정하려면 CUSTOM 타입을 사용하세요' : '{{prompt}}, {{model}} 등 변수 사용 가능'}>
                   <textarea
                     style={{ ...s.textarea, ...(!isCustom ? s.inputLocked : {}) }}
                     value={form.bodyTemplateJson}
@@ -255,10 +240,10 @@ export default function ProviderSettingsPage() {
                     rows={6}
                     disabled={!isCustom}
                   />
-                </Field>
-                <Field label="옵션 스키마 JSON" hint="사용자 정의 옵션 필드 스키마">
+                </FormField>
+                <FormField label="옵션 스키마 JSON" hint="사용자 정의 옵션 필드 스키마">
                   <textarea style={s.textarea} value={form.optionSchemaJson} onChange={set('optionSchemaJson')} rows={4} />
-                </Field>
+                </FormField>
               </>
             )}
 
@@ -310,18 +295,6 @@ export default function ProviderSettingsPage() {
         </div>
       </main>
     </>
-  )
-}
-
-function Field({ label, hint, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
-        {label}
-        {hint && <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '6px' }}>{hint}</span>}
-      </label>
-      {children}
-    </div>
   )
 }
 

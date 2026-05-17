@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import { getProviderKeys, createProviderKey, deleteProviderKey } from '../api/providers'
-
-const PROVIDER_TYPES = ['OPENAI', 'GEMINI', 'CLAUDE', 'CUSTOM']
+import { PROVIDER_TYPES } from '../constants/providerOptions'
 
 export default function ProvidersPage() {
   const [keys, setKeys] = useState([])
