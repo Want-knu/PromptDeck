@@ -50,6 +50,8 @@ services:
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3000}:80"
+      # 프로덕션 HTTPS 배포 시 주석 해제
+      # - "443:443"
     depends_on:
       - backend
     networks:
