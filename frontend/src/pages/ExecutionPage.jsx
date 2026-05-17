@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import { PageHeader, Card, Button, Badge, LoadingSpinner } from '../components/ui'
 import { getProviderKeys } from '../api/providers'
 import { getProviderSettings } from '../api/providerSettings'
 import { executeProvider, previewProvider } from '../api/executions'
@@ -89,13 +90,13 @@ export default function ExecutionPage() {
     <>
       <Navbar />
       <main style={st.main}>
-        <h2 style={st.heading}>요청 실행</h2>
+        <PageHeader title="요청 실행" />
 
         {loadingDeps ? (
-          <p style={st.info}>불러오는 중...</p>
+          <LoadingSpinner />
         ) : (
           <div style={st.layout}>
-            <section style={st.panel}>
+            <Card style={st.panel}>
               <h3 style={st.subheading}>설정 선택</h3>
 
               <label style={st.label}>API Key</label>
@@ -154,24 +155,27 @@ export default function ExecutionPage() {
               {error && <p style={st.error}>{error}</p>}
 
               <div style={st.btnRow}>
-                <button
-                  style={st.previewBtn}
+                <Button
+                  variant="success"
                   onClick={handlePreview}
                   disabled={previewing || executing || !form.providerKeyId || !form.providerSettingId}
+                  loading={previewing}
+                  style={{ flex: 1 }}
                 >
-                  {previewing ? '미리보기 중...' : '미리보기'}
-                </button>
-                <button
-                  style={st.executeBtn}
+                  미리보기
+                </Button>
+                <Button
                   onClick={handleExecute}
                   disabled={previewing || executing || !form.providerKeyId || !form.providerSettingId}
+                  loading={executing}
+                  style={{ flex: 1 }}
                 >
-                  {executing ? '실행 중...' : '실행'}
-                </button>
+                  실행
+                </Button>
               </div>
-            </section>
+            </Card>
 
-            <section style={st.panel}>
+            <Card style={st.panel}>
               <h3 style={st.subheading}>결과</h3>
 
               {!preview && !result && (
@@ -182,7 +186,7 @@ export default function ExecutionPage() {
                 <div>
                   <p style={st.resultLabel}>요청 미리보기</p>
                   <div style={st.resultMeta}>
-                    <span style={st.badge}>{preview.method}</span>
+                    <Badge variant="info">{preview.method}</Badge>
                     <code style={st.endpoint}>{preview.endpoint}</code>
                   </div>
                   {preview.headers && Object.keys(preview.headers).length > 0 && (
@@ -204,9 +208,9 @@ export default function ExecutionPage() {
                 <div>
                   <div style={st.resultHeader}>
                     <p style={st.resultLabel}>실행 결과</p>
-                    <span style={{ ...st.statusBadge, ...(result.success ? st.statusOk : st.statusFail) }}>
+                    <Badge variant={result.success ? 'success' : 'error'}>
                       {result.statusCode} {result.success ? '성공' : '실패'}
-                    </span>
+                    </Badge>
                   </div>
                   <p style={st.sectionLabel}>{result.providerType} · {result.model}</p>
 
@@ -230,7 +234,7 @@ export default function ExecutionPage() {
                   </pre>
                 </div>
               )}
-            </section>
+            </Card>
           </div>
         )}
       </main>

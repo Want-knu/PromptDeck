@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import { PageHeader, Card, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
 import { getProviderKeys, createProviderKey, deleteProviderKey } from '../api/providers'
 import { useProviderOptions } from '../hooks/useProviderOptions'
 
@@ -61,12 +62,11 @@ export default function ProvidersPage() {
     <>
       <Navbar />
       <main style={styles.main}>
-        <div style={styles.header}>
-          <h2 style={styles.heading}>Provider Key 관리</h2>
-          <button style={styles.addBtn} onClick={() => setShowForm(v => !v)}>
-            {showForm ? '취소' : '+ Key 추가'}
-          </button>
-        </div>
+        <PageHeader
+          title="Provider Key 관리"
+          actionLabel={showForm ? '취소' : '+ Key 추가'}
+          onAction={() => setShowForm(v => !v)}
+        />
 
         {showForm && (
           <form onSubmit={handleCreate} style={styles.form}>
@@ -98,31 +98,29 @@ export default function ProvidersPage() {
               required
             />
             {formError && <p style={styles.error}>{formError}</p>}
-            <button style={styles.submitBtn} type="submit" disabled={saving}>
-              {saving ? '저장 중...' : '저장'}
-            </button>
+            <Button type="submit" loading={saving}>저장</Button>
           </form>
         )}
 
-        {loading && <p style={styles.info}>불러오는 중...</p>}
+        {loading && <LoadingSpinner />}
         {error && <p style={styles.error}>{error}</p>}
 
         {!loading && keys.length === 0 && (
-          <p style={styles.info}>등록된 API Key가 없습니다. 위에서 추가해보세요.</p>
+          <EmptyState message="등록된 API Key가 없습니다. 위에서 추가해보세요." />
         )}
 
         <div style={styles.list}>
           {keys.map(k => (
-            <div key={k.id} style={styles.keyCard}>
-              <div>
-                <span style={styles.badge}>{k.providerType}</span>
+            <Card key={k.id} style={styles.keyCard}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <Badge>{k.providerType}</Badge>
                 <span style={styles.keyName}>{k.displayName}</span>
               </div>
               <div style={styles.keyMeta}>
                 <code style={styles.maskedKey}>{k.maskedApiKey}</code>
-                <button style={styles.deleteBtn} onClick={() => handleDelete(k.id)}>삭제</button>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(k.id)}>삭제</Button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </main>

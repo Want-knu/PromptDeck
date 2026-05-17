@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import { PageHeader, Card, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
 import { getExecutionHistory } from '../api/executions'
-
-const STATUS_COLOR = {
-  true: { bg: '#dcfce7', color: '#16a34a' },
-  false: { bg: '#fee2e2', color: '#dc2626' }
-}
 
 export default function HistoryPage() {
   const [history, setHistory] = useState([])
@@ -46,29 +42,25 @@ export default function HistoryPage() {
     <>
       <Navbar />
       <main style={s.main}>
-        <div style={s.header}>
-          <h2 style={s.heading}>요청 기록</h2>
-          <button style={s.refreshBtn} onClick={fetchHistory}>새로고침</button>
-        </div>
+        <PageHeader title="요청 기록" actionLabel="새로고침" onAction={fetchHistory} />
 
-        {loading && <p style={s.info}>불러오는 중...</p>}
+        {loading && <LoadingSpinner />}
         {error && <p style={s.error}>{error}</p>}
         {!loading && history.length === 0 && (
-          <p style={s.info}>실행 기록이 없습니다. 요청 실행 페이지에서 먼저 실행해보세요.</p>
+          <EmptyState message="실행 기록이 없습니다. 요청 실행 페이지에서 먼저 실행해보세요." />
         )}
 
         <div style={s.list}>
           {history.map(h => {
             const isExpanded = expanded === h.id
-            const statusStyle = h.success != null ? STATUS_COLOR[String(h.success)] : { bg: '#f3f4f6', color: '#6b7280' }
+            const badgeVariant = h.success == null ? 'default' : h.success ? 'success' : 'error'
+            const badgeText = h.success == null ? `- ${h.statusCode ?? ''}` : `${h.success ? '성공' : '실패'} ${h.statusCode ?? ''}`
 
             return (
-              <div key={h.id} style={s.card}>
+              <Card key={h.id} style={s.card}>
                 <div style={s.row} onClick={() => toggleExpand(h.id)}>
                   <div style={s.rowLeft}>
-                    <span style={{ ...s.badge, ...statusStyle }}>
-                      {h.success == null ? '-' : h.success ? '성공' : '실패'} {h.statusCode ?? ''}
-                    </span>
+                    <Badge variant={badgeVariant}>{badgeText}</Badge>
                     <div>
                       <p style={s.cardTitle}>{h.providerType} · {h.model}</p>
                       <p style={s.cardSub}>{formatDate(h.createdAt)} · {h.durationMs != null ? `${h.durationMs}ms` : '-'}</p>
@@ -114,7 +106,7 @@ export default function HistoryPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             )
           })}
         </div>

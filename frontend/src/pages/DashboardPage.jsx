@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { PageHeader, Card } from '../components/ui'
 
 const FEATURES = [
   {
@@ -33,11 +34,11 @@ export default function DashboardPage() {
     <>
       <Navbar />
       <main style={styles.main}>
-        <h2 style={styles.heading}>대시보드</h2>
+        <PageHeader title="대시보드" />
         <p style={styles.desc}>PromptDeck에 오신 것을 환영합니다. 아래 기능을 사용해보세요.</p>
         <div style={styles.grid}>
           {FEATURES.map(f => (
-            <div key={f.title} style={styles.card}>
+            <Card key={f.title} hoverable style={styles.card}>
               <h3 style={styles.cardTitle}>{f.title}</h3>
               <p style={styles.cardDesc}>{f.description}</p>
               <Link
@@ -50,7 +51,7 @@ export default function DashboardPage() {
               >
                 {f.label}
               </Link>
-            </div>
+            </Card>
           ))}
         </div>
       </main>

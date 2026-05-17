@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-import FormField from '../components/ui/FormField'
+import { FormField, PageHeader, Tabs, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
 import {
   getProviderSettings,
   createProviderSetting,
@@ -154,7 +154,7 @@ export default function ProviderSettingsPage() {
       return (
         <>
           <Navbar />
-          <main style={s.main}><p style={s.info}>옵션 불러오는 중...</p></main>
+          <main style={s.main}><LoadingSpinner message="옵션 불러오는 중..." /></main>
         </>
       )
     }
@@ -166,22 +166,20 @@ export default function ProviderSettingsPage() {
       <>
         <Navbar />
         <main style={s.main}>
-          <div style={s.header}>
-            <h2 style={s.heading}>{mode === 'create' ? '새 Provider 설정 추가' : 'Provider 설정 수정'}</h2>
-            <button style={s.cancelBtn} onClick={cancel}>목록으로</button>
-          </div>
+          <PageHeader
+            title={mode === 'create' ? '새 Provider 설정 추가' : 'Provider 설정 수정'}
+            actionLabel="목록으로"
+            onAction={cancel}
+          />
 
-          <div style={s.tabs}>
-            {['basic', 'advanced'].map(t => (
-              <button
-                key={t}
-                style={{ ...s.tab, ...(tab === t ? s.tabActive : {}) }}
-                onClick={() => setTab(t)}
-              >
-                {t === 'basic' ? '기본 정보' : '고급 설정'}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            tabs={[
+              { key: 'basic', label: '기본 정보' },
+              { key: 'advanced', label: '고급 설정' }
+            ]}
+            activeTab={tab}
+            onChange={setTab}
+          />
 
           <form onSubmit={handleSubmit} style={s.form}>
             {tab === 'basic' && (
@@ -275,10 +273,10 @@ export default function ProviderSettingsPage() {
 
             {formError && <p style={s.error}>{formError}</p>}
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-              <button style={s.submitBtn} type="submit" disabled={saving}>
-                {saving ? '저장 중...' : '저장'}
-              </button>
-              <button style={s.cancelBtn} type="button" onClick={cancel}>취소</button>
+              <Button type="submit" loading={saving}>
+                {mode === 'create' ? '생성' : '수정'}
+              </Button>
+              <Button variant="outline" type="button" onClick={cancel}>취소</Button>
             </div>
           </form>
         </main>
@@ -290,22 +288,19 @@ export default function ProviderSettingsPage() {
     <>
       <Navbar />
       <main style={s.main}>
-        <div style={s.header}>
-          <h2 style={s.heading}>Provider 설정 관리</h2>
-          <button style={s.addBtn} onClick={openCreate}>+ 설정 추가</button>
-        </div>
+        <PageHeader title="Provider 설정 관리" actionLabel="+ 설정 추가" onAction={openCreate} />
 
-        {loading && <p style={s.info}>불러오는 중...</p>}
+        {loading && <LoadingSpinner />}
         {error && <p style={s.error}>{error}</p>}
         {!loading && settings.length === 0 && (
-          <p style={s.info}>등록된 Provider 설정이 없습니다. 위에서 추가해보세요.</p>
+          <EmptyState message="등록된 Provider 설정이 없습니다. 위에서 추가해보세요." />
         )}
 
         <div style={s.list}>
           {settings.map(item => (
             <div key={item.id} style={s.card}>
               <div style={s.cardLeft}>
-                <span style={s.badge}>{item.providerType}</span>
+                <Badge>{item.providerType}</Badge>
                 <div>
                   <p style={s.cardTitle}>{item.displayName}</p>
                   <p style={s.cardSub}>{item.model} · {item.endpoint}</p>
@@ -313,8 +308,8 @@ export default function ProviderSettingsPage() {
                 </div>
               </div>
               <div style={s.cardActions}>
-                <button style={s.editBtn} onClick={() => openEdit(item)}>수정</button>
-                <button style={s.deleteBtn} onClick={() => handleDelete(item)}>삭제</button>
+                <Button variant="outline" size="sm" onClick={() => openEdit(item)}>수정</Button>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>삭제</Button>
               </div>
             </div>
           ))}

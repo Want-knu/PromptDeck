@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import { PageHeader, Card, Button, LoadingSpinner, EmptyState } from '../components/ui'
 import { getOrganizations, createOrganization, addOrganizationMember } from '../api/organizations'
 
 export default function OrganizationsPage() {
@@ -65,12 +66,11 @@ export default function OrganizationsPage() {
     <>
       <Navbar />
       <main style={styles.main}>
-        <div style={styles.header}>
-          <h2 style={styles.heading}>조직 관리</h2>
-          <button style={styles.addBtn} onClick={() => setShowCreateForm(v => !v)}>
-            {showCreateForm ? '취소' : '+ 조직 만들기'}
-          </button>
-        </div>
+        <PageHeader
+          title="조직 관리"
+          actionLabel={showCreateForm ? '취소' : '+ 조직 만들기'}
+          onAction={() => setShowCreateForm(v => !v)}
+        />
 
         {showCreateForm && (
           <form onSubmit={handleCreate} style={styles.form}>
@@ -85,22 +85,20 @@ export default function OrganizationsPage() {
               required
             />
             {createError && <p style={styles.error}>{createError}</p>}
-            <button style={styles.submitBtn} type="submit" disabled={creating}>
-              {creating ? '생성 중...' : '생성'}
-            </button>
+            <Button type="submit" loading={creating}>생성</Button>
           </form>
         )}
 
-        {loading && <p style={styles.info}>불러오는 중...</p>}
+        {loading && <LoadingSpinner />}
         {error && <p style={styles.error}>{error}</p>}
 
         {!loading && orgs.length === 0 && (
-          <p style={styles.info}>소속된 조직이 없습니다. 위에서 조직을 만들어보세요.</p>
+          <EmptyState message="소속된 조직이 없습니다. 위에서 조직을 만들어보세요." />
         )}
 
         <div style={styles.list}>
           {orgs.map(org => (
-            <div key={org.id} style={styles.card}>
+            <Card key={org.id} style={styles.card}>
               <div style={styles.cardHeader}>
                 <span style={styles.orgName}>{org.name}</span>
                 <span style={styles.orgId}>ID: {org.id}</span>
@@ -115,18 +113,19 @@ export default function OrganizationsPage() {
                   onChange={e => setMemberForms(prev => ({ ...prev, [org.id]: e.target.value }))}
                   required
                 />
-                <button
-                  style={styles.memberBtn}
+                <Button
                   type="submit"
-                  disabled={memberAdding[org.id]}
+                  variant="outline"
+                  size="sm"
+                  loading={memberAdding[org.id]}
                 >
-                  {memberAdding[org.id] ? '추가 중...' : '멤버 추가'}
-                </button>
+                  멤버 추가
+                </Button>
               </form>
               {memberErrors[org.id] && (
                 <p style={styles.error}>{memberErrors[org.id]}</p>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       </main>
