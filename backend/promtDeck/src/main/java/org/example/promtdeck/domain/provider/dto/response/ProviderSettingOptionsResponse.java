@@ -26,6 +26,7 @@ public record ProviderSettingOptionsResponse(
             String defaultResponsePath,
             List<NamedJsonOption> bodyTemplates,
             List<NamedJsonOption> optionSchemas,
+            Map<String, ModelOption> modelOptions,
             boolean custom
     ) {
     }
@@ -48,6 +49,12 @@ public record ProviderSettingOptionsResponse(
     public record NamedJsonOption(
             String label,
             String value
+    ) {
+    }
+
+    public record ModelOption(
+            String optionSchemaJson,
+            String responsePath
     ) {
     }
 }

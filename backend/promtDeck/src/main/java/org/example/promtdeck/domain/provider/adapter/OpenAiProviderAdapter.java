@@ -49,6 +49,22 @@ public class OpenAiProviderAdapter implements ProviderAdapter {
             templateVariables.putIfAbsent("max_output_tokens", body.maxOutputTokens());
         }
 
+        if (body.presencePenalty() != null) {
+            templateVariables.putIfAbsent("presence_penalty", body.presencePenalty());
+        }
+
+        if (body.frequencyPenalty() != null) {
+            templateVariables.putIfAbsent("frequency_penalty", body.frequencyPenalty());
+        }
+
+        if (body.reasoning() != null) {
+            templateVariables.putIfAbsent("reasoning", body.reasoning());
+        }
+
+        if (body.stop() != null) {
+            templateVariables.putIfAbsent("stop", body.stop());
+        }
+
         return templateVariables;
     }
 }

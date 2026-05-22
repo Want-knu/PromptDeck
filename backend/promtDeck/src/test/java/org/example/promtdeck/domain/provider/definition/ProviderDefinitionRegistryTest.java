@@ -1,4 +1,4 @@
-package org.example.promtdeck.domain.provider.service;
+package org.example.promtdeck.domain.provider.definition;
 
 import org.example.promtdeck.domain.provider.type.AuthType;
 import org.example.promtdeck.domain.provider.type.HttpMethodType;
@@ -9,11 +9,20 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class ProviderSettingDefaultsTest {
+class ProviderDefinitionRegistryTest {
+
+    private final ProviderDefinitionRegistry registry = new ProviderDefinitionRegistry(
+            java.util.List.of(
+                    new OpenAiProviderDefinition(),
+                    new GeminiProviderDefinition(),
+                    new ClaudeProviderDefinition(),
+                    new CustomProviderDefinition()
+            )
+    );
 
     @Test
     void officialProviderIgnoresClientAuthAndEndpointValues() {
-        ProviderSettingDefaults.ResolvedSetting resolved = ProviderSettingDefaults.resolve(
+        ResolvedProviderSetting resolved = registry.resolve(command(
                 ProviderType.OPENAI,
                 "gpt-5.5",
                 "https://wrong.example.com",
@@ -26,7 +35,7 @@ class ProviderSettingDefaultsTest {
                 "{\"prompt\":\"{{prompt}}\"}",
                 "{\"custom\":true}",
                 "custom.path"
-        );
+        ));
 
         assertThat(resolved.endpoint()).isEqualTo("https://api.openai.com/v1/responses");
         assertThat(resolved.method()).isEqualTo(HttpMethodType.POST);
@@ -41,7 +50,7 @@ class ProviderSettingDefaultsTest {
 
     @Test
     void geminiEndpointIsBuiltFromModel() {
-        ProviderSettingDefaults.ResolvedSetting resolved = ProviderSettingDefaults.resolve(
+        ResolvedProviderSetting resolved = registry.resolve(command(
                 ProviderType.GEMINI,
                 "gemini-2.5-flash",
                 null,
@@ -54,7 +63,7 @@ class ProviderSettingDefaultsTest {
                 null,
                 null,
                 null
-        );
+        ));
 
         assertThat(resolved.endpoint()).isEqualTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent");
         assertThat(resolved.authType()).isEqualTo(AuthType.QUERY_PARAM);
@@ -63,7 +72,7 @@ class ProviderSettingDefaultsTest {
 
     @Test
     void customProviderKeepsClientConfig() {
-        ProviderSettingDefaults.ResolvedSetting resolved = ProviderSettingDefaults.resolve(
+        ResolvedProviderSetting resolved = registry.resolve(command(
                 ProviderType.CUSTOM,
                 "my-model",
                 "https://api.example.com/run",
@@ -76,7 +85,7 @@ class ProviderSettingDefaultsTest {
                 "{\"prompt\":\"{{prompt}}\"}",
                 "{\"temperature\":{\"type\":\"number\"}}",
                 "data.text"
-        );
+        ));
 
         assertThat(resolved.endpoint()).isEqualTo("https://api.example.com/run");
         assertThat(resolved.method()).isEqualTo(HttpMethodType.PATCH);
@@ -91,7 +100,7 @@ class ProviderSettingDefaultsTest {
 
     @Test
     void customProviderRequiresEndpointAndAuthNamesWhenNeeded() {
-        assertThatThrownBy(() -> ProviderSettingDefaults.resolve(
+        assertThatThrownBy(() -> registry.resolve(command(
                 ProviderType.CUSTOM,
                 "my-model",
                 "",
@@ -104,9 +113,9 @@ class ProviderSettingDefaultsTest {
                 null,
                 null,
                 null
-        )).isInstanceOf(CustomException.class);
+        ))).isInstanceOf(CustomException.class);
 
-        assertThatThrownBy(() -> ProviderSettingDefaults.resolve(
+        assertThatThrownBy(() -> registry.resolve(command(
                 ProviderType.CUSTOM,
                 "my-model",
                 "https://api.example.com/run",
@@ -119,9 +128,9 @@ class ProviderSettingDefaultsTest {
                 null,
                 null,
                 null
-        )).isInstanceOf(CustomException.class);
+        ))).isInstanceOf(CustomException.class);
 
-        assertThatThrownBy(() -> ProviderSettingDefaults.resolve(
+        assertThatThrownBy(() -> registry.resolve(command(
                 ProviderType.CUSTOM,
                 "my-model",
                 "https://api.example.com/run",
@@ -134,12 +143,12 @@ class ProviderSettingDefaultsTest {
                 null,
                 null,
                 null
-        )).isInstanceOf(CustomException.class);
+        ))).isInstanceOf(CustomException.class);
     }
 
     @Test
     void customProviderRejectsLocalAndPrivateEndpoints() {
-        assertThatThrownBy(() -> ProviderSettingDefaults.resolve(
+        assertThatThrownBy(() -> registry.resolve(command(
                 ProviderType.CUSTOM,
                 "my-model",
                 "http://localhost:8080/run",
@@ -152,12 +161,12 @@ class ProviderSettingDefaultsTest {
                 null,
                 null,
                 null
-        )).isInstanceOf(CustomException.class);
+        ))).isInstanceOf(CustomException.class);
 
-        assertThatThrownBy(() -> ProviderSettingDefaults.resolve(
+        assertThatThrownBy(() -> registry.resolve(command(
                 ProviderType.CUSTOM,
                 "my-model",
-                "http://192.168.0.10/run",
+                "http://10.0.0.5/run",
                 HttpMethodType.POST,
                 AuthType.NONE,
                 null,
@@ -167,6 +176,36 @@ class ProviderSettingDefaultsTest {
                 null,
                 null,
                 null
-        )).isInstanceOf(CustomException.class);
+        ))).isInstanceOf(CustomException.class);
+    }
+
+    private ProviderSettingResolveCommand command(
+            ProviderType providerType,
+            String model,
+            String endpoint,
+            HttpMethodType method,
+            AuthType authType,
+            String authHeaderName,
+            String authQueryParamName,
+            String headersJson,
+            String queryParamsJson,
+            String bodyTemplateJson,
+            String optionSchemaJson,
+            String responsePath
+    ) {
+        return new ProviderSettingResolveCommand(
+                providerType,
+                model,
+                endpoint,
+                method,
+                authType,
+                authHeaderName,
+                authQueryParamName,
+                headersJson,
+                queryParamsJson,
+                bodyTemplateJson,
+                optionSchemaJson,
+                responsePath
+        );
     }
 }
