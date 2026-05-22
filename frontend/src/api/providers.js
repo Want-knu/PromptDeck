@@ -18,6 +18,16 @@ export async function createProviderKey(providerType, apiKey, displayName) {
   return data.data
 }
 
+export async function updateProviderKey(id, body) {
+  const res = await apiFetch(`${BASE}/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(body)
+  })
+  const data = await readJsonResponse(res, '수정 실패')
+  return data.data
+}
+
 export async function deleteProviderKey(id) {
   const res = await apiFetch(`${BASE}/${id}`, {
     method: 'DELETE',

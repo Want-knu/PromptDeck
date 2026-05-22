@@ -1,25 +1,30 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import { PageHeader, Card, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
 import { getExecutionHistory } from '../api/executions'
-
-const STATUS_COLOR = {
-  true: { bg: '#dcfce7', color: '#16a34a' },
-  false: { bg: '#fee2e2', color: '#dc2626' }
-}
+import { getOrganizations } from '../api/organizations'
 
 export default function HistoryPage() {
   const [history, setHistory] = useState([])
+  const [organizations, setOrganizations] = useState([])
+  const [organizationId, setOrganizationId] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState(null)
 
-  useEffect(() => { fetchHistory() }, [])
+  useEffect(() => {
+    getOrganizations()
+      .then(data => setOrganizations(data ?? []))
+      .catch(() => setOrganizations([]))
+  }, [])
+
+  useEffect(() => { fetchHistory() }, [organizationId])
 
   async function fetchHistory() {
     setLoading(true)
     setError('')
     try {
-      const data = await getExecutionHistory()
+      const data = await getExecutionHistory(organizationId || undefined)
       setHistory(data ?? [])
     } catch (err) {
       setError(err.message)
@@ -46,29 +51,40 @@ export default function HistoryPage() {
     <>
       <Navbar />
       <main style={s.main}>
-        <div style={s.header}>
-          <h2 style={s.heading}>요청 기록</h2>
-          <button style={s.refreshBtn} onClick={fetchHistory}>새로고침</button>
+        <PageHeader title="요청 기록" actionLabel="새로고침" onAction={fetchHistory} />
+
+        <div style={s.filterRow}>
+          <label style={s.filterLabel} htmlFor="history-organization">조직</label>
+          <select
+            id="history-organization"
+            style={s.select}
+            value={organizationId}
+            onChange={e => setOrganizationId(e.target.value)}
+          >
+            <option value="">내 기록</option>
+            {organizations.map(org => (
+              <option key={org.id} value={org.id}>{org.name}</option>
+            ))}
+          </select>
         </div>
 
-        {loading && <p style={s.info}>불러오는 중...</p>}
+        {loading && <LoadingSpinner />}
         {error && <p style={s.error}>{error}</p>}
         {!loading && history.length === 0 && (
-          <p style={s.info}>실행 기록이 없습니다. 요청 실행 페이지에서 먼저 실행해보세요.</p>
+          <EmptyState message="실행 기록이 없습니다. 요청 실행 페이지에서 먼저 실행해보세요." />
         )}
 
         <div style={s.list}>
           {history.map(h => {
             const isExpanded = expanded === h.id
-            const statusStyle = h.success != null ? STATUS_COLOR[String(h.success)] : { bg: '#f3f4f6', color: '#6b7280' }
+            const badgeVariant = h.success == null ? 'default' : h.success ? 'success' : 'error'
+            const badgeText = h.success == null ? `- ${h.statusCode ?? ''}` : `${h.success ? '성공' : '실패'} ${h.statusCode ?? ''}`
 
             return (
-              <div key={h.id} style={s.card}>
+              <Card key={h.id} style={s.card}>
                 <div style={s.row} onClick={() => toggleExpand(h.id)}>
                   <div style={s.rowLeft}>
-                    <span style={{ ...s.badge, ...statusStyle }}>
-                      {h.success == null ? '-' : h.success ? '성공' : '실패'} {h.statusCode ?? ''}
-                    </span>
+                    <Badge variant={badgeVariant}>{badgeText}</Badge>
                     <div>
                       <p style={s.cardTitle}>{h.providerType} · {h.model}</p>
                       <p style={s.cardSub}>{formatDate(h.createdAt)} · {h.durationMs != null ? `${h.durationMs}ms` : '-'}</p>
@@ -114,7 +130,7 @@ export default function HistoryPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             )
           })}
         </div>
@@ -125,6 +141,9 @@ export default function HistoryPage() {
 
 const s = {
   main: { maxWidth: '860px', margin: '40px auto', padding: '0 24px' },
+  filterRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' },
+  filterLabel: { fontSize: '13px', fontWeight: 600, color: '#374151' },
+  select: { padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', outline: 'none' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
   heading: { fontSize: '22px', fontWeight: 700 },
   refreshBtn: { padding: '8px 16px', background: 'transparent', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 },

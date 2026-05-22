@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-import { getProviderKeys, createProviderKey, deleteProviderKey } from '../api/providers'
-
-const PROVIDER_TYPES = ['OPENAI', 'GEMINI', 'CLAUDE', 'CUSTOM']
+import { PageHeader, Card, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
+import { getProviderKeys, createProviderKey, updateProviderKey, deleteProviderKey } from '../api/providers'
+import { useProviderOptions } from '../hooks/useProviderOptions'
 
 export default function ProvidersPage() {
   const [keys, setKeys] = useState([])
@@ -10,8 +10,11 @@ export default function ProvidersPage() {
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ providerType: 'OPENAI', apiKey: '', displayName: '' })
+  const [editTarget, setEditTarget] = useState(null)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+
+  const { providerTypes } = useProviderOptions('OPENAI')
 
   useEffect(() => {
     fetchKeys()
@@ -35,8 +38,17 @@ export default function ProvidersPage() {
     setFormError('')
     setSaving(true)
     try {
-      await createProviderKey(form.providerType, form.apiKey, form.displayName)
-      setForm({ providerType: 'OPENAI', apiKey: '', displayName: '' })
+      if (editTarget) {
+        await updateProviderKey(editTarget.id, {
+          version: editTarget.version,
+          providerType: form.providerType,
+          apiKey: form.apiKey,
+          displayName: form.displayName
+        })
+      } else {
+        await createProviderKey(form.providerType, form.apiKey, form.displayName)
+      }
+      resetForm()
       setShowForm(false)
       fetchKeys()
     } catch (err) {
@@ -44,6 +56,34 @@ export default function ProvidersPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function openCreate() {
+    resetForm()
+    setShowForm(true)
+  }
+
+  function openEdit(key) {
+    setEditTarget(key)
+    setForm({ providerType: key.providerType, apiKey: '', displayName: key.displayName })
+    setFormError('')
+    setShowForm(true)
+  }
+
+  function resetForm() {
+    setEditTarget(null)
+    setForm({ providerType: 'OPENAI', apiKey: '', displayName: '' })
+    setFormError('')
+  }
+
+  function toggleForm() {
+    if (showForm) {
+      resetForm()
+      setShowForm(false)
+      return
+    }
+
+    openCreate()
   }
 
   async function handleDelete(id) {
@@ -60,23 +100,22 @@ export default function ProvidersPage() {
     <>
       <Navbar />
       <main style={styles.main}>
-        <div style={styles.header}>
-          <h2 style={styles.heading}>Provider Key 관리</h2>
-          <button style={styles.addBtn} onClick={() => setShowForm(v => !v)}>
-            {showForm ? '취소' : '+ Key 추가'}
-          </button>
-        </div>
+        <PageHeader
+          title="Provider Key 관리"
+          actionLabel={showForm ? '취소' : '+ Key 추가'}
+          onAction={toggleForm}
+        />
 
         {showForm && (
           <form onSubmit={handleCreate} style={styles.form}>
-            <h3 style={styles.formTitle}>새 API Key 등록</h3>
+            <h3 style={styles.formTitle}>{editTarget ? 'API Key 수정' : '새 API Key 등록'}</h3>
             <label style={styles.label}>Provider</label>
             <select
               style={styles.input}
               value={form.providerType}
               onChange={e => setForm(p => ({ ...p, providerType: e.target.value }))}
             >
-              {PROVIDER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {providerTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <label style={styles.label}>표시 이름</label>
             <input
@@ -91,37 +130,36 @@ export default function ProvidersPage() {
             <input
               style={styles.input}
               type="password"
-              placeholder="sk-..."
+              placeholder={editTarget ? '새 API Key 입력' : 'sk-...'}
               value={form.apiKey}
               onChange={e => setForm(p => ({ ...p, apiKey: e.target.value }))}
               required
             />
             {formError && <p style={styles.error}>{formError}</p>}
-            <button style={styles.submitBtn} type="submit" disabled={saving}>
-              {saving ? '저장 중...' : '저장'}
-            </button>
+            <Button type="submit" loading={saving}>{editTarget ? '수정' : '저장'}</Button>
           </form>
         )}
 
-        {loading && <p style={styles.info}>불러오는 중...</p>}
+        {loading && <LoadingSpinner />}
         {error && <p style={styles.error}>{error}</p>}
 
         {!loading && keys.length === 0 && (
-          <p style={styles.info}>등록된 API Key가 없습니다. 위에서 추가해보세요.</p>
+          <EmptyState message="등록된 API Key가 없습니다. 위에서 추가해보세요." />
         )}
 
         <div style={styles.list}>
           {keys.map(k => (
-            <div key={k.id} style={styles.keyCard}>
-              <div>
-                <span style={styles.badge}>{k.providerType}</span>
+            <Card key={k.id} style={styles.keyCard}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <Badge>{k.providerType}</Badge>
                 <span style={styles.keyName}>{k.displayName}</span>
               </div>
               <div style={styles.keyMeta}>
                 <code style={styles.maskedKey}>{k.maskedApiKey}</code>
-                <button style={styles.deleteBtn} onClick={() => handleDelete(k.id)}>삭제</button>
+                <Button variant="secondary" size="sm" onClick={() => openEdit(k)}>수정</Button>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(k.id)}>삭제</Button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </main>

@@ -2,14 +2,14 @@ export const PROVIDER_TYPES = ['OPENAI', 'GEMINI', 'CLAUDE', 'CUSTOM']
 export const HTTP_METHODS = ['POST', 'GET', 'PUT', 'PATCH', 'DELETE']
 export const AUTH_TYPES = ['BEARER', 'HEADER', 'QUERY_PARAM', 'NONE']
 
-// 백엔드 API 연동 전 임시 모델 목록 — 추후 API 응답으로 교체 예정
+// 백엔드 옵션 API 실패 시 사용하는 fallback 모델 목록
 export const PROVIDER_MODELS = {
   OPENAI: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-  GEMINI: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+  GEMINI: ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
   CLAUDE: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
 }
 
-// 백엔드 API 연동 전 임시 프리셋 — 추후 API 응답으로 교체 예정
+// 백엔드 옵션 API 실패 시 사용하는 fallback 프리셋
 export const PROVIDER_PRESETS = {
   OPENAI: {
     endpoint: 'https://api.openai.com/v1/chat/completions',

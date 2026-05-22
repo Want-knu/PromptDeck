@@ -1,41 +1,54 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
+import { FormField, PageHeader, Tabs, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
 import {
   getProviderSettings,
   createProviderSetting,
   updateProviderSetting,
   deleteProviderSetting
 } from '../api/providerSettings'
-import {
-  PROVIDER_TYPES,
-  HTTP_METHODS,
-  AUTH_TYPES,
-  PROVIDER_MODELS,
-  PROVIDER_PRESETS,
-} from '../constants/providerOptions'
-
-const OPENAI_PRESET = PROVIDER_PRESETS.OPENAI
-
-const EMPTY_FORM = {
-  providerType: 'OPENAI',
-  displayName: '',
-  model: PROVIDER_MODELS.OPENAI[0],
-  ...OPENAI_PRESET,
-  headersJson: '',
-  queryParamsJson: '',
-  optionSchemaJson: '',
-}
+import { getOrganizations } from '../api/organizations'
+import { useProviderOptions } from '../hooks/useProviderOptions'
 
 export default function ProviderSettingsPage() {
   const [settings, setSettings] = useState([])
+  const [organizations, setOrganizations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [mode, setMode] = useState('list') // 'list' | 'create' | 'edit'
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState(null)   // optionsReady 전까지 null
   const [editTarget, setEditTarget] = useState(null)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [tab, setTab] = useState('basic') // 'basic' | 'advanced'
+
+  const {
+    changeProviderType,
+    optionsReady,
+    providerTypes,
+    httpMethods,
+    authTypes,
+    providerModels,
+    providerPresets,
+  } = useProviderOptions('OPENAI')
+
+  // optionsReady 시점에 EMPTY_FORM 초기화 (사용자가 아직 create/edit 진입 안 했을 때만)
+  useEffect(() => {
+    if (optionsReady && form === null) {
+      const preset = providerPresets.OPENAI ?? {}
+      const models = providerModels.OPENAI ?? []
+      setForm({
+        providerType: 'OPENAI',
+        organizationId: '',
+        displayName: '',
+        model: models[0] ?? '',
+        ...preset,
+        headersJson: '',
+        queryParamsJson: '',
+        optionSchemaJson: '',
+      })
+    }
+  }, [optionsReady, providerPresets, providerModels, form])
 
   useEffect(() => { fetchSettings() }, [])
 
@@ -43,8 +56,12 @@ export default function ProviderSettingsPage() {
     setLoading(true)
     setError('')
     try {
-      const data = await getProviderSettings()
+      const [data, orgData] = await Promise.all([
+        getProviderSettings(),
+        getOrganizations()
+      ])
       setSettings(data ?? [])
+      setOrganizations(orgData ?? [])
     } catch (err) {
       setError(err.message)
     } finally {
@@ -53,7 +70,18 @@ export default function ProviderSettingsPage() {
   }
 
   function openCreate() {
-    setForm(EMPTY_FORM)
+    const preset = providerPresets.OPENAI ?? {}
+    const models = providerModels.OPENAI ?? []
+    setForm({
+      providerType: 'OPENAI',
+      organizationId: '',
+      displayName: '',
+      model: models[0] ?? '',
+      ...preset,
+      headersJson: '',
+      queryParamsJson: '',
+      optionSchemaJson: '',
+    })
     setEditTarget(null)
     setFormError('')
     setTab('basic')
@@ -63,6 +91,7 @@ export default function ProviderSettingsPage() {
   function openEdit(s) {
     setForm({
       providerType: s.providerType,
+      organizationId: s.organizationId ? String(s.organizationId) : '',
       displayName: s.displayName,
       model: s.model,
       endpoint: s.endpoint,
@@ -89,31 +118,7 @@ export default function ProviderSettingsPage() {
 
   // providerType 변경 시 연관 필드를 프리셋으로 초기화
   function handleProviderTypeChange(e) {
-    const newType = e.target.value
-    const preset = PROVIDER_PRESETS[newType]
-    const models = PROVIDER_MODELS[newType] ?? []
-    if (preset) {
-      setForm(p => ({
-        ...p,
-        providerType: newType,
-        model: models[0],
-        ...preset,
-      }))
-    } else {
-      // CUSTOM: 연관 필드 초기화
-      setForm(p => ({
-        ...p,
-        providerType: newType,
-        model: '',
-        endpoint: '',
-        method: 'POST',
-        authType: 'BEARER',
-        authHeaderName: '',
-        authQueryParamName: '',
-        responsePath: '',
-        bodyTemplateJson: '',
-      }))
-    }
+    changeProviderType(e.target.value, setForm)
   }
 
   async function handleSubmit(e) {
@@ -123,13 +128,15 @@ export default function ProviderSettingsPage() {
     try {
       const payload = {
         ...form,
+        organizationId: form.organizationId ? Number(form.organizationId) : undefined,
         authHeaderName: form.authType === 'HEADER' ? form.authHeaderName : undefined,
         authQueryParamName: form.authType === 'QUERY_PARAM' ? form.authQueryParamName : undefined
       }
       if (mode === 'create') {
         await createProviderSetting(payload)
       } else {
-        await updateProviderSetting(editTarget.id, { ...payload, version: editTarget.version })
+        const { organizationId, ...updatePayload } = payload
+        await updateProviderSetting(editTarget.id, { ...updatePayload, version: editTarget.version })
       }
       setMode('list')
       fetchSettings()
@@ -153,42 +160,58 @@ export default function ProviderSettingsPage() {
   const set = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }))
 
   if (mode === 'create' || mode === 'edit') {
+    // options API 응답 대기 중
+    if (form === null) {
+      return (
+        <>
+          <Navbar />
+          <main style={s.main}><LoadingSpinner message="옵션 불러오는 중..." /></main>
+        </>
+      )
+    }
+
     const isCustom = form.providerType === 'CUSTOM'
-    const availableModels = PROVIDER_MODELS[form.providerType] ?? []
+    const availableModels = providerModels[form.providerType] ?? []
 
     return (
       <>
         <Navbar />
         <main style={s.main}>
-          <div style={s.header}>
-            <h2 style={s.heading}>{mode === 'create' ? '새 Provider 설정 추가' : 'Provider 설정 수정'}</h2>
-            <button style={s.cancelBtn} onClick={cancel}>목록으로</button>
-          </div>
+          <PageHeader
+            title={mode === 'create' ? '새 Provider 설정 추가' : 'Provider 설정 수정'}
+            actionLabel="목록으로"
+            onAction={cancel}
+          />
 
-          <div style={s.tabs}>
-            {['basic', 'advanced'].map(t => (
-              <button
-                key={t}
-                style={{ ...s.tab, ...(tab === t ? s.tabActive : {}) }}
-                onClick={() => setTab(t)}
-              >
-                {t === 'basic' ? '기본 정보' : '고급 설정'}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            tabs={[
+              { key: 'basic', label: '기본 정보' },
+              { key: 'advanced', label: '고급 설정' }
+            ]}
+            activeTab={tab}
+            onChange={setTab}
+          />
 
           <form onSubmit={handleSubmit} style={s.form}>
             {tab === 'basic' && (
               <>
-                <Field label="Provider 타입">
+                <FormField label="Provider 타입">
                   <select style={s.input} value={form.providerType} onChange={handleProviderTypeChange}>
-                    {PROVIDER_TYPES.map(t => <option key={t}>{t}</option>)}
+                    {providerTypes.map(t => <option key={t}>{t}</option>)}
                   </select>
-                </Field>
-                <Field label="표시 이름">
+                </FormField>
+                <FormField label="조직" hint={mode === 'edit' ? '수정 시 조직은 변경되지 않습니다' : '선택하지 않으면 개인 설정으로 저장됩니다'}>
+                  <select style={{ ...s.input, ...(mode === 'edit' ? s.inputLocked : {}) }} value={form.organizationId} onChange={set('organizationId')} disabled={mode === 'edit'}>
+                    <option value="">개인</option>
+                    {organizations.map(org => (
+                      <option key={org.id} value={org.id}>{org.name}</option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="표시 이름">
                   <input style={s.input} required value={form.displayName} onChange={set('displayName')} placeholder="My GPT-4 Setting" />
-                </Field>
-                <Field label="모델명">
+                </FormField>
+                <FormField label="모델명">
                   {isCustom ? (
                     <input style={s.input} required value={form.model} onChange={set('model')} placeholder="your-model-name" />
                   ) : (
@@ -196,38 +219,43 @@ export default function ProviderSettingsPage() {
                       {availableModels.map(m => <option key={m}>{m}</option>)}
                     </select>
                   )}
-                </Field>
-                <Field label="엔드포인트 URL" hint={!isCustom ? '프리셋 자동완성' : undefined}>
-                  <input
-                    style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }}
-                    required
-                    value={form.endpoint}
-                    onChange={set('endpoint')}
-                    disabled={!isCustom}
-                    placeholder={isCustom ? 'https://api.example.com/v1/chat' : undefined}
-                  />
-                </Field>
-                <Field label="HTTP 메서드" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                </FormField>
+                <FormField label="엔드포인트 URL" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                  {isCustom ? (
+                    <input
+                      style={s.input}
+                      required
+                      value={form.endpoint}
+                      onChange={set('endpoint')}
+                      placeholder="https://api.example.com/v1/chat"
+                    />
+                  ) : (
+                    <select style={{ ...s.input, ...s.inputLocked }} value={form.endpoint} onChange={set('endpoint')} disabled>
+                      <option value={form.endpoint}>{form.endpoint}</option>
+                    </select>
+                  )}
+                </FormField>
+                <FormField label="HTTP 메서드" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.method} onChange={set('method')} disabled={!isCustom}>
-                    {HTTP_METHODS.map(m => <option key={m}>{m}</option>)}
+                    {httpMethods.map(m => <option key={m}>{m}</option>)}
                   </select>
-                </Field>
-                <Field label="인증 방식" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                </FormField>
+                <FormField label="인증 방식" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.authType} onChange={set('authType')} disabled={!isCustom}>
-                    {AUTH_TYPES.map(a => <option key={a}>{a}</option>)}
+                    {authTypes.map(a => <option key={a}>{a}</option>)}
                   </select>
-                </Field>
+                </FormField>
                 {form.authType === 'HEADER' && (
-                  <Field label="인증 헤더명">
+                  <FormField label="인증 헤더명">
                     <input style={s.input} value={form.authHeaderName} onChange={set('authHeaderName')} placeholder="X-API-Key" />
-                  </Field>
+                  </FormField>
                 )}
                 {form.authType === 'QUERY_PARAM' && (
-                  <Field label="인증 쿼리 파라미터명">
+                  <FormField label="인증 쿼리 파라미터명">
                     <input style={s.input} value={form.authQueryParamName} onChange={set('authQueryParamName')} placeholder="api_key" />
-                  </Field>
+                  </FormField>
                 )}
-                <Field label="응답 추출 경로 (JSONPath)" hint={!isCustom ? '프리셋 자동완성' : undefined}>
+                <FormField label="응답 추출 경로 (JSONPath)" hint={!isCustom ? '프리셋 자동완성' : undefined}>
                   <input
                     style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }}
                     value={form.responsePath}
@@ -235,19 +263,19 @@ export default function ProviderSettingsPage() {
                     disabled={!isCustom}
                     placeholder={isCustom ? 'choices[0].message.content' : undefined}
                   />
-                </Field>
+                </FormField>
               </>
             )}
 
             {tab === 'advanced' && (
               <>
-                <Field label="헤더 JSON" hint="예: {&quot;X-Custom&quot;: &quot;value&quot;}">
+                <FormField label="헤더 JSON" hint={'예: {"X-Custom": "value"}'}>
                   <textarea style={s.textarea} value={form.headersJson} onChange={set('headersJson')} rows={3} />
-                </Field>
-                <Field label="쿼리 파라미터 JSON" hint="예: {&quot;version&quot;: &quot;2024-01&quot;}">
+                </FormField>
+                <FormField label="쿼리 파라미터 JSON" hint={'예: {"version": "2024-01"}'}>
                   <textarea style={s.textarea} value={form.queryParamsJson} onChange={set('queryParamsJson')} rows={3} />
-                </Field>
-                <Field label="바디 템플릿 JSON" hint={!isCustom ? '프리셋 자동완성 — 수정하려면 CUSTOM 타입을 사용하세요' : '{{prompt}}, {{model}} 등 변수 사용 가능'}>
+                </FormField>
+                <FormField label="바디 템플릿 JSON" hint={!isCustom ? '프리셋 자동완성 — 수정하려면 CUSTOM 타입을 사용하세요' : '{{prompt}}, {{model}} 등 변수 사용 가능'}>
                   <textarea
                     style={{ ...s.textarea, ...(!isCustom ? s.inputLocked : {}) }}
                     value={form.bodyTemplateJson}
@@ -255,19 +283,19 @@ export default function ProviderSettingsPage() {
                     rows={6}
                     disabled={!isCustom}
                   />
-                </Field>
-                <Field label="옵션 스키마 JSON" hint="사용자 정의 옵션 필드 스키마">
+                </FormField>
+                <FormField label="옵션 스키마 JSON" hint="사용자 정의 옵션 필드 스키마">
                   <textarea style={s.textarea} value={form.optionSchemaJson} onChange={set('optionSchemaJson')} rows={4} />
-                </Field>
+                </FormField>
               </>
             )}
 
             {formError && <p style={s.error}>{formError}</p>}
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-              <button style={s.submitBtn} type="submit" disabled={saving}>
-                {saving ? '저장 중...' : '저장'}
-              </button>
-              <button style={s.cancelBtn} type="button" onClick={cancel}>취소</button>
+              <Button type="submit" loading={saving}>
+                {mode === 'create' ? '생성' : '수정'}
+              </Button>
+              <Button variant="outline" type="button" onClick={cancel}>취소</Button>
             </div>
           </form>
         </main>
@@ -279,22 +307,19 @@ export default function ProviderSettingsPage() {
     <>
       <Navbar />
       <main style={s.main}>
-        <div style={s.header}>
-          <h2 style={s.heading}>Provider 설정 관리</h2>
-          <button style={s.addBtn} onClick={openCreate}>+ 설정 추가</button>
-        </div>
+        <PageHeader title="Provider 설정 관리" actionLabel="+ 설정 추가" onAction={openCreate} />
 
-        {loading && <p style={s.info}>불러오는 중...</p>}
+        {loading && <LoadingSpinner />}
         {error && <p style={s.error}>{error}</p>}
         {!loading && settings.length === 0 && (
-          <p style={s.info}>등록된 Provider 설정이 없습니다. 위에서 추가해보세요.</p>
+          <EmptyState message="등록된 Provider 설정이 없습니다. 위에서 추가해보세요." />
         )}
 
         <div style={s.list}>
           {settings.map(item => (
             <div key={item.id} style={s.card}>
               <div style={s.cardLeft}>
-                <span style={s.badge}>{item.providerType}</span>
+                <Badge>{item.providerType}</Badge>
                 <div>
                   <p style={s.cardTitle}>{item.displayName}</p>
                   <p style={s.cardSub}>{item.model} · {item.endpoint}</p>
@@ -302,26 +327,14 @@ export default function ProviderSettingsPage() {
                 </div>
               </div>
               <div style={s.cardActions}>
-                <button style={s.editBtn} onClick={() => openEdit(item)}>수정</button>
-                <button style={s.deleteBtn} onClick={() => handleDelete(item)}>삭제</button>
+                <Button variant="outline" size="sm" onClick={() => openEdit(item)}>수정</Button>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>삭제</Button>
               </div>
             </div>
           ))}
         </div>
       </main>
     </>
-  )
-}
-
-function Field({ label, hint, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
-        {label}
-        {hint && <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '6px' }}>{hint}</span>}
-      </label>
-      {children}
-    </div>
   )
 }
 

@@ -24,6 +24,9 @@ export default function Navbar() {
           <>
             <Link to="/" style={styles.link}>대시보드</Link>
             <Link to="/providers" style={styles.link}>Provider Keys</Link>
+            <Link to="/provider-settings" style={styles.link}>Provider 설정</Link>
+            <Link to="/execution" style={styles.link}>요청 실행</Link>
+            <Link to="/history" style={styles.link}>기록</Link>
             <Link to="/organizations" style={styles.link}>조직</Link>
             <button style={styles.logoutBtn} onClick={handleLogout}>로그아웃</button>
           </>
