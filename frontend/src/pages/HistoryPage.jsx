@@ -2,20 +2,29 @@ import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import { PageHeader, Card, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
 import { getExecutionHistory } from '../api/executions'
+import { getOrganizations } from '../api/organizations'
 
 export default function HistoryPage() {
   const [history, setHistory] = useState([])
+  const [organizations, setOrganizations] = useState([])
+  const [organizationId, setOrganizationId] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState(null)
 
-  useEffect(() => { fetchHistory() }, [])
+  useEffect(() => {
+    getOrganizations()
+      .then(data => setOrganizations(data ?? []))
+      .catch(() => setOrganizations([]))
+  }, [])
+
+  useEffect(() => { fetchHistory() }, [organizationId])
 
   async function fetchHistory() {
     setLoading(true)
     setError('')
     try {
-      const data = await getExecutionHistory()
+      const data = await getExecutionHistory(organizationId || undefined)
       setHistory(data ?? [])
     } catch (err) {
       setError(err.message)
@@ -43,6 +52,21 @@ export default function HistoryPage() {
       <Navbar />
       <main style={s.main}>
         <PageHeader title="요청 기록" actionLabel="새로고침" onAction={fetchHistory} />
+
+        <div style={s.filterRow}>
+          <label style={s.filterLabel} htmlFor="history-organization">조직</label>
+          <select
+            id="history-organization"
+            style={s.select}
+            value={organizationId}
+            onChange={e => setOrganizationId(e.target.value)}
+          >
+            <option value="">내 기록</option>
+            {organizations.map(org => (
+              <option key={org.id} value={org.id}>{org.name}</option>
+            ))}
+          </select>
+        </div>
 
         {loading && <LoadingSpinner />}
         {error && <p style={s.error}>{error}</p>}
@@ -117,6 +141,9 @@ export default function HistoryPage() {
 
 const s = {
   main: { maxWidth: '860px', margin: '40px auto', padding: '0 24px' },
+  filterRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' },
+  filterLabel: { fontSize: '13px', fontWeight: 600, color: '#374151' },
+  select: { padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', outline: 'none' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
   heading: { fontSize: '22px', fontWeight: 700 },
   refreshBtn: { padding: '8px 16px', background: 'transparent', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 },

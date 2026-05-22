@@ -7,10 +7,12 @@ import {
   updateProviderSetting,
   deleteProviderSetting
 } from '../api/providerSettings'
+import { getOrganizations } from '../api/organizations'
 import { useProviderOptions } from '../hooks/useProviderOptions'
 
 export default function ProviderSettingsPage() {
   const [settings, setSettings] = useState([])
+  const [organizations, setOrganizations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [mode, setMode] = useState('list') // 'list' | 'create' | 'edit'
@@ -37,6 +39,7 @@ export default function ProviderSettingsPage() {
       const models = providerModels.OPENAI ?? []
       setForm({
         providerType: 'OPENAI',
+        organizationId: '',
         displayName: '',
         model: models[0] ?? '',
         ...preset,
@@ -53,8 +56,12 @@ export default function ProviderSettingsPage() {
     setLoading(true)
     setError('')
     try {
-      const data = await getProviderSettings()
+      const [data, orgData] = await Promise.all([
+        getProviderSettings(),
+        getOrganizations()
+      ])
       setSettings(data ?? [])
+      setOrganizations(orgData ?? [])
     } catch (err) {
       setError(err.message)
     } finally {
@@ -67,6 +74,7 @@ export default function ProviderSettingsPage() {
     const models = providerModels.OPENAI ?? []
     setForm({
       providerType: 'OPENAI',
+      organizationId: '',
       displayName: '',
       model: models[0] ?? '',
       ...preset,
@@ -83,6 +91,7 @@ export default function ProviderSettingsPage() {
   function openEdit(s) {
     setForm({
       providerType: s.providerType,
+      organizationId: s.organizationId ? String(s.organizationId) : '',
       displayName: s.displayName,
       model: s.model,
       endpoint: s.endpoint,
@@ -119,13 +128,15 @@ export default function ProviderSettingsPage() {
     try {
       const payload = {
         ...form,
+        organizationId: form.organizationId ? Number(form.organizationId) : undefined,
         authHeaderName: form.authType === 'HEADER' ? form.authHeaderName : undefined,
         authQueryParamName: form.authType === 'QUERY_PARAM' ? form.authQueryParamName : undefined
       }
       if (mode === 'create') {
         await createProviderSetting(payload)
       } else {
-        await updateProviderSetting(editTarget.id, { ...payload, version: editTarget.version })
+        const { organizationId, ...updatePayload } = payload
+        await updateProviderSetting(editTarget.id, { ...updatePayload, version: editTarget.version })
       }
       setMode('list')
       fetchSettings()
@@ -187,6 +198,14 @@ export default function ProviderSettingsPage() {
                 <FormField label="Provider 타입">
                   <select style={s.input} value={form.providerType} onChange={handleProviderTypeChange}>
                     {providerTypes.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </FormField>
+                <FormField label="조직" hint={mode === 'edit' ? '수정 시 조직은 변경되지 않습니다' : '선택하지 않으면 개인 설정으로 저장됩니다'}>
+                  <select style={{ ...s.input, ...(mode === 'edit' ? s.inputLocked : {}) }} value={form.organizationId} onChange={set('organizationId')} disabled={mode === 'edit'}>
+                    <option value="">개인</option>
+                    {organizations.map(org => (
+                      <option key={org.id} value={org.id}>{org.name}</option>
+                    ))}
                   </select>
                 </FormField>
                 <FormField label="표시 이름">
