@@ -8,6 +8,7 @@ import org.example.promtdeck.global.common.ErrorCode;
 import org.example.promtdeck.global.exception.CustomException;
 import org.springframework.util.StringUtils;
 
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,9 +103,9 @@ public final class ProviderSettingDefaults {
                 false
         ));
         providers.put(ProviderType.GEMINI, option(
-                List.of("gemini-1.5-pro", "gemini-1.5-flash"),
-                "gemini-1.5-pro",
-                endpoint("Gemini Generate Content API", GEMINI_ENDPOINT_TEMPLATE.formatted("gemini-1.5-pro"), AuthType.QUERY_PARAM, null, "key", "candidates[0].content.parts[0].text"),
+                List.of("gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"),
+                "gemini-3.5-flash",
+                endpoint("Gemini Generate Content API", GEMINI_ENDPOINT_TEMPLATE.formatted("gemini-3.5-flash"), AuthType.QUERY_PARAM, null, "key", "candidates[0].content.parts[0].text"),
                 List.of(AuthType.QUERY_PARAM),
                 AuthType.QUERY_PARAM,
                 null,
@@ -128,6 +129,7 @@ public final class ProviderSettingDefaults {
                 "",
                 List.of(),
                 List.of(),
+                Map.of(),
                 true
         ));
 
@@ -171,6 +173,7 @@ public final class ProviderSettingDefaults {
         if (!StringUtils.hasText(endpoint)) {
             throw new CustomException(ErrorCode.INVALID_PROVIDER_OPTION);
         }
+        validateEndpoint(endpoint);
 
         AuthType resolvedAuthType = authType == null ? AuthType.BEARER : authType;
         String resolvedAuthHeaderName = null;
@@ -204,6 +207,36 @@ public final class ProviderSettingDefaults {
         );
     }
 
+    private static void validateEndpoint(String endpoint) {
+        try {
+            URI uri = URI.create(endpoint);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+
+            if (!("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
+                    || !StringUtils.hasText(host)
+                    || isBlockedHost(host)) {
+                throw new CustomException(ErrorCode.INVALID_PROVIDER_OPTION);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_PROVIDER_OPTION);
+        }
+    }
+
+    private static boolean isBlockedHost(String host) {
+        String normalized = host.toLowerCase();
+        return "localhost".equals(normalized)
+                || normalized.endsWith(".localhost")
+                || normalized.startsWith("127.")
+                || normalized.startsWith("10.")
+                || normalized.startsWith("192.168.")
+                || normalized.matches("172\\.(1[6-9]|2\\d|3[0-1])\\..*")
+                || normalized.startsWith("169.254.")
+                || "0.0.0.0".equals(normalized)
+                || "::1".equals(normalized)
+                || normalized.startsWith("[::1]");
+    }
+
     private static ProviderSettingOptionsResponse.ProviderOption option(
             List<String> models,
             String defaultModel,
@@ -231,6 +264,7 @@ public final class ProviderSettingDefaults {
                 defaultResponsePath,
                 List.of(),
                 List.of(),
+                Map.of(),
                 custom
         );
     }

@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 public record ProviderExecuteRequest(
-        @NotNull
         Long providerKeyId,
 
         @NotNull

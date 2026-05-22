@@ -18,6 +18,7 @@ import org.example.promtdeck.domain.provider.entity.ProviderSetting;
 import org.example.promtdeck.domain.provider.entity.ProviderExecutionHistory;
 import org.example.promtdeck.domain.provider.repository.ProviderExecutionHistoryRepository;
 import org.example.promtdeck.domain.provider.repository.ProviderKeyRepository;
+import org.example.promtdeck.domain.provider.type.AuthType;
 import org.example.promtdeck.domain.user.entity.User;
 import org.example.promtdeck.domain.user.repository.UserRepository;
 import org.example.promtdeck.global.common.ErrorCode;
@@ -100,20 +101,19 @@ public class RequestExecutionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        ProviderKey providerKey = providerKeyRepository.findByIdAndUser(request.providerKeyId(), user)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROVIDER_KEY_NOT_FOUND));
-
         ProviderSetting setting = providerSettingService.getAccessibleSetting(request.providerSettingId(), user);
+        ProviderKey providerKey = resolveProviderKey(request, user, setting);
 
-        if (providerKey.getProviderType() != setting.getProviderType()) {
+        if (providerKey != null && providerKey.getProviderType() != setting.getProviderType()) {
             throw new CustomException(ErrorCode.PROVIDER_TYPE_MISMATCH);
         }
 
-        String apiKey = preview ? providerKey.getMaskedApiKey() : apiKeyCrypto.decrypt(providerKey.getEncryptedApiKey());
+        String apiKey = resolveApiKey(providerKey, preview);
         ProviderAdapter adapter = adapterResolver.getAdapter(setting.getProviderType());
         ProviderHttpRequest httpRequest = adapter.toHttpRequest(setting, apiKey, resolveVariables(setting, request));
+        ProviderHttpRequest historyRequest = preview ? httpRequest : maskApiKey(httpRequest, apiKey);
 
-        return new ExecutionContext(user, providerKey, setting, httpRequest);
+        return new ExecutionContext(user, providerKey, setting, httpRequest, historyRequest);
     }
 
     private void saveHistory(ExecutionContext context, ProviderExecuteResponse response, long durationMs) {
@@ -121,11 +121,11 @@ public class RequestExecutionService {
                 context.setting().getProviderType(),
                 context.setting().getModel(),
                 context.setting().getId(),
-                context.providerKey().getId(),
+                context.providerKey() == null ? null : context.providerKey().getId(),
                 response.statusCode(),
                 response.success(),
                 durationMs,
-                writeJson(context.httpRequest()),
+                writeJson(context.historyRequest()),
                 response.responseBody(),
                 response.parsedResponse(),
                 response.errorMessage(),
@@ -171,11 +171,57 @@ public class RequestExecutionService {
         return variables;
     }
 
+    private ProviderKey resolveProviderKey(ProviderExecuteRequest request, User user, ProviderSetting setting) {
+        if (request.providerKeyId() == null) {
+            if (setting.getAuthType() == AuthType.NONE) {
+                return null;
+            }
+
+            throw new CustomException(ErrorCode.PROVIDER_KEY_NOT_FOUND);
+        }
+
+        return providerKeyRepository.findByIdAndUser(request.providerKeyId(), user)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROVIDER_KEY_NOT_FOUND));
+    }
+
+    private String resolveApiKey(ProviderKey providerKey, boolean preview) {
+        if (providerKey == null) {
+            return "";
+        }
+
+        return preview ? providerKey.getMaskedApiKey() : apiKeyCrypto.decrypt(providerKey.getEncryptedApiKey());
+    }
+
+    private ProviderHttpRequest maskApiKey(ProviderHttpRequest request, String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return request;
+        }
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        request.headers().forEach((name, value) -> headers.put(name, maskSecret(value, apiKey)));
+
+        return new ProviderHttpRequest(
+                request.method(),
+                maskSecret(request.endpoint(), apiKey),
+                headers,
+                request.body()
+        );
+    }
+
+    private String maskSecret(String value, String secret) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.replace(secret, "****");
+    }
+
     private record ExecutionContext(
             User user,
             ProviderKey providerKey,
             ProviderSetting setting,
-            ProviderHttpRequest httpRequest
+            ProviderHttpRequest httpRequest,
+            ProviderHttpRequest historyRequest
     ) {
     }
 }
