@@ -101,7 +101,7 @@ public abstract class AbstractOfficialProviderDefinition implements ProviderDefi
                 headersJson,
                 null,
                 null,
-                StringUtils.hasText(command.optionSchemaJson()) ? command.optionSchemaJson() : modelSpec.optionSchemaJson(),
+                modelSpec.optionSchemaJson(),
                 modelSpec.responsePath()
         );
     }

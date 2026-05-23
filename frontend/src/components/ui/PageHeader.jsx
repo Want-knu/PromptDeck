@@ -1,35 +1,16 @@
-export default function PageHeader({ title, actionLabel, onAction, actionDisabled }) {
+export default function PageHeader({ title, description, eyebrow, actionLabel, onAction, actionDisabled }) {
   return (
-    <div style={s.header}>
-      <h2 style={s.heading}>{title}</h2>
+    <div className="pd-page-header">
+      <div className="pd-page-header__copy">
+        {eyebrow && <p className="pd-page-header__eyebrow">{eyebrow}</p>}
+        <h2 className="pd-page-header__title">{title}</h2>
+        {description && <p className="pd-page-header__description">{description}</p>}
+      </div>
       {actionLabel && (
-        <button style={s.actionBtn} onClick={onAction} disabled={actionDisabled}>
+        <button className="pd-btn pd-btn--primary" onClick={onAction} disabled={actionDisabled}>
           {actionLabel}
         </button>
       )}
     </div>
   )
-}
-
-const s = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-    flexWrap: 'wrap',
-    gap: '12px'
-  },
-  heading: { fontSize: '22px', fontWeight: 700, margin: 0 },
-  actionBtn: {
-    padding: '8px 18px',
-    background: '#4f46e5',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: 600,
-    fontSize: '14px',
-    whiteSpace: 'nowrap'
-  }
 }

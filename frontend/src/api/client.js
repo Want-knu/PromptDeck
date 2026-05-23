@@ -58,6 +58,42 @@ export async function readJsonResponse(res, fallbackMessage) {
   return data
 }
 
+export async function apiGet(url, fallbackMessage = '조회 실패') {
+  const res = await apiFetch(url, { headers: authHeaders() })
+  const data = await readJsonResponse(res, fallbackMessage)
+  return data.data
+}
+
+export async function apiPost(url, body, fallbackMessage = '요청 실패') {
+  const res = await apiFetch(url, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(body)
+  })
+  const data = await readJsonResponse(res, fallbackMessage)
+  return data.data
+}
+
+export async function apiPut(url, body, fallbackMessage = '수정 실패') {
+  const res = await apiFetch(url, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(body)
+  })
+  const data = await readJsonResponse(res, fallbackMessage)
+  return data.data
+}
+
+export async function apiDelete(url, fallbackMessage = '삭제 실패') {
+  const res = await apiFetch(url, {
+    method: 'DELETE',
+    headers: authHeaders()
+  })
+  if (!res.ok) {
+    await readJsonResponse(res, fallbackMessage)
+  }
+}
+
 export async function refreshAccessToken() {
   if (!refreshPromise) {
     refreshPromise = requestAccessTokenRefresh()

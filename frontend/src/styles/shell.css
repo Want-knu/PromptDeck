@@ -1,0 +1,220 @@
+.pd-top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 10px 24px;
+  background: transparent;
+}
+
+.pd-nav-inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 12px 8px 16px;
+  background: var(--pd-nav-bg);
+  backdrop-filter: blur(22px);
+  border: 1px solid var(--pd-border-soft);
+  border-radius: 8px;
+  box-shadow: 0 14px 42px rgba(15,23,42,0.10);
+}
+
+.pd-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 178px;
+  color: var(--pd-heading);
+  text-decoration: none;
+}
+
+.pd-nav-brand:hover {
+  text-decoration: none;
+}
+
+.pd-nav-brand__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--pd-primary-gradient);
+  color: var(--pd-on-primary);
+  box-shadow: var(--pd-glow);
+  font-weight: 900;
+}
+
+.pd-nav-brand__text {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.pd-primary-nav {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  background: var(--pd-surface-muted);
+  border: 1px solid var(--pd-border-soft);
+  border-radius: 8px;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+
+.pd-primary-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.pd-primary-nav__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--pd-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pd-primary-nav__link:hover {
+  text-decoration: none;
+}
+
+.pd-primary-nav__link--active {
+  background: var(--pd-surface-raised);
+  color: var(--pd-heading);
+  box-shadow: var(--pd-shadow-sm);
+}
+
+.pd-nav-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pd-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 10px 0 12px;
+  background: var(--pd-surface-raised);
+  border: 1px solid var(--pd-border-soft);
+  border-radius: 8px;
+  color: var(--pd-text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: var(--pd-shadow-sm);
+}
+
+.pd-theme-toggle__label {
+  min-width: 36px;
+  text-align: left;
+}
+
+.pd-theme-toggle__track {
+  position: relative;
+  display: inline-flex;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--pd-secondary-gradient);
+  padding: 2px;
+}
+
+.pd-theme-toggle__thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--pd-on-primary);
+  box-shadow: 0 2px 8px rgba(15,23,42,0.22);
+  transform: translateX(0);
+  transition: transform 0.18s ease;
+}
+
+.pd-theme-toggle__thumb--dark {
+  transform: translateX(16px);
+}
+
+.pd-nav-logout {
+  min-height: 38px;
+  padding: 0 13px;
+  background: transparent;
+  border: 1px solid var(--pd-border-soft);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--pd-muted);
+  font-weight: 700;
+}
+
+.pd-nav-login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 16px;
+  background: var(--pd-primary-gradient);
+  color: var(--pd-on-primary);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: var(--pd-glow);
+}
+
+.pd-nav-login:hover {
+  text-decoration: none;
+}
+
+@media (max-width: 1080px) {
+  .pd-nav-inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "brand actions"
+      "menu menu";
+  }
+
+  .pd-nav-brand {
+    grid-area: brand;
+  }
+
+  .pd-primary-nav {
+    grid-area: menu;
+    justify-self: stretch;
+  }
+
+  .pd-nav-actions {
+    grid-area: actions;
+  }
+}
+
+@media (max-width: 640px) {
+  .pd-top-nav {
+    padding: 8px 12px;
+  }
+
+  .pd-nav-inner {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .pd-nav-actions {
+    gap: 6px;
+  }
+
+  .pd-theme-toggle {
+    padding-inline: 9px;
+  }
+}

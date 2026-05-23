@@ -1,0 +1,20 @@
+export const historyPageStyles = {
+  main: { maxWidth: '1040px', margin: '34px auto', padding: '0 24px 56px' },
+  filterRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', padding: '14px 16px', background: 'var(--pd-surface-raised)', border: '1px solid var(--pd-border-soft)', borderRadius: '8px', boxShadow: 'var(--pd-shadow-sm)', backdropFilter: 'blur(18px)' },
+  filterLabel: { fontSize: '13px', fontWeight: 800, color: 'var(--pd-text)' },
+  select: { padding: '10px 12px', border: '1px solid var(--pd-border)', borderRadius: '8px', fontSize: '14px', outline: 'none' },
+  error: { color: 'var(--pd-danger)', fontSize: '13px' },
+  list: { display: 'flex', flexDirection: 'column', gap: '14px' },
+  card: { background: 'var(--pd-surface-raised)', borderRadius: '8px', boxShadow: 'var(--pd-shadow-sm)', overflow: 'hidden', border: '1px solid var(--pd-border-soft)', backdropFilter: 'blur(18px)' },
+  row: { padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' },
+  rowLeft: { display: 'flex', alignItems: 'center', gap: '14px' },
+  cardTitle: { fontSize: '15px', fontWeight: 900, marginBottom: '3px', color: 'var(--pd-heading)' },
+  cardSub: { fontSize: '12px', color: 'var(--pd-muted)' },
+  toggle: { fontSize: '11px', color: 'var(--pd-muted-soft)' },
+  detail: { borderTop: '1px solid var(--pd-surface-muted)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '6px' },
+  detailLabel: { fontSize: '12px', fontWeight: 600, color: 'var(--pd-muted)', marginTop: '8px', marginBottom: '4px' },
+  parsedBox: { background: 'var(--pd-success-soft)', border: '1px solid var(--pd-success)', borderRadius: '8px', padding: '12px', fontSize: '14px', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
+  pre: { background: 'var(--pd-code-bg)', color: 'var(--pd-code-text)', borderRadius: '8px', padding: '12px', fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' },
+  metaRow: { display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' },
+  metaItem: { fontSize: '11px', color: 'var(--pd-muted-soft)' }
+}

@@ -1,20 +1,5 @@
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f0f2f5;
-  color: #1a1a1a;
-}
-
-a {
-  color: #4f46e5;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/motion.css';
+@import './styles/components.css';
+@import './styles/shell.css';
