@@ -1,12 +1,15 @@
-export default function Card({ children, onClick, hoverable = false, style }) {
+export default function Card({ children, onClick, hoverable = false, style, className = '' }) {
+  const classes = [
+    'pd-card',
+    hoverable ? 'pd-card--hoverable' : '',
+    onClick ? 'pd-card--clickable' : '',
+    className
+  ].filter(Boolean).join(' ')
+
   return (
     <div
-      style={{
-        ...s.card,
-        ...(hoverable ? s.hoverable : {}),
-        ...(onClick ? s.clickable : {}),
-        ...style
-      }}
+      className={classes}
+      style={style}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -15,19 +18,4 @@ export default function Card({ children, onClick, hoverable = false, style }) {
       {children}
     </div>
   )
-}
-
-const s = {
-  card: {
-    background: '#fff',
-    borderRadius: '12px',
-    border: '1px solid #e5e7eb',
-    padding: '20px'
-  },
-  hoverable: {
-    transition: 'box-shadow 0.15s, border-color 0.15s'
-  },
-  clickable: {
-    cursor: 'pointer'
-  }
 }
