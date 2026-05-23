@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-import { FormField, PageHeader, Tabs, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
+import { PageHeader, Button, LoadingSpinner, EmptyState, Modal } from '../components/ui'
+import ProviderSettingCard from '../components/providerSettings/ProviderSettingCard'
+import ProviderSettingForm from '../components/providerSettings/ProviderSettingForm'
 import {
   getProviderSettings,
   createProviderSetting,
@@ -9,18 +11,25 @@ import {
 } from '../api/providerSettings'
 import { getOrganizations } from '../api/organizations'
 import { useProviderOptions } from '../hooks/useProviderOptions'
+import {
+  buildProviderSettingPayload,
+  createProviderSettingEditForm,
+  createProviderSettingForm
+} from '../utils/providerSettingForm'
+import { providerSettingsPageStyles as s } from '../styles/pageStyles/providerSettingsPageStyles'
 
 export default function ProviderSettingsPage() {
   const [settings, setSettings] = useState([])
   const [organizations, setOrganizations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [mode, setMode] = useState('list') // 'list' | 'create' | 'edit'
-  const [form, setForm] = useState(null)   // optionsReady 전까지 null
+  const [mode, setMode] = useState('list')
+  const [form, setForm] = useState(null)
   const [editTarget, setEditTarget] = useState(null)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
-  const [tab, setTab] = useState('basic') // 'basic' | 'advanced'
+  const [tab, setTab] = useState('basic')
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const {
     changeProviderType,
@@ -32,21 +41,9 @@ export default function ProviderSettingsPage() {
     providerPresets,
   } = useProviderOptions('OPENAI')
 
-  // optionsReady 시점에 EMPTY_FORM 초기화 (사용자가 아직 create/edit 진입 안 했을 때만)
   useEffect(() => {
     if (optionsReady && form === null) {
-      const preset = providerPresets.OPENAI ?? {}
-      const models = providerModels.OPENAI ?? []
-      setForm({
-        providerType: 'OPENAI',
-        organizationId: '',
-        displayName: '',
-        model: models[0] ?? '',
-        ...preset,
-        headersJson: '',
-        queryParamsJson: '',
-        optionSchemaJson: '',
-      })
+      setForm(createProviderSettingForm('OPENAI', providerPresets, providerModels))
     }
   }, [optionsReady, providerPresets, providerModels, form])
 
@@ -70,18 +67,7 @@ export default function ProviderSettingsPage() {
   }
 
   function openCreate() {
-    const preset = providerPresets.OPENAI ?? {}
-    const models = providerModels.OPENAI ?? []
-    setForm({
-      providerType: 'OPENAI',
-      organizationId: '',
-      displayName: '',
-      model: models[0] ?? '',
-      ...preset,
-      headersJson: '',
-      queryParamsJson: '',
-      optionSchemaJson: '',
-    })
+    setForm(createProviderSettingForm('OPENAI', providerPresets, providerModels))
     setEditTarget(null)
     setFormError('')
     setTab('basic')
@@ -89,22 +75,7 @@ export default function ProviderSettingsPage() {
   }
 
   function openEdit(s) {
-    setForm({
-      providerType: s.providerType,
-      organizationId: s.organizationId ? String(s.organizationId) : '',
-      displayName: s.displayName,
-      model: s.model,
-      endpoint: s.endpoint,
-      method: s.method ?? 'POST',
-      authType: s.authType ?? 'BEARER',
-      authHeaderName: s.authHeaderName ?? '',
-      authQueryParamName: s.authQueryParamName ?? '',
-      headersJson: s.headersJson ?? '',
-      queryParamsJson: s.queryParamsJson ?? '',
-      bodyTemplateJson: s.bodyTemplateJson ?? '',
-      optionSchemaJson: s.optionSchemaJson ?? '',
-      responsePath: s.responsePath ?? ''
-    })
+    setForm(createProviderSettingEditForm(s))
     setEditTarget(s)
     setFormError('')
     setTab('basic')
@@ -116,9 +87,12 @@ export default function ProviderSettingsPage() {
     setEditTarget(null)
   }
 
-  // providerType 변경 시 연관 필드를 프리셋으로 초기화
   function handleProviderTypeChange(e) {
-    changeProviderType(e.target.value, setForm)
+    const nextProviderType = e.target.value
+    changeProviderType(nextProviderType, setForm)
+    if (nextProviderType !== 'CUSTOM') {
+      setTab('basic')
+    }
   }
 
   async function handleSubmit(e) {
@@ -126,12 +100,7 @@ export default function ProviderSettingsPage() {
     setFormError('')
     setSaving(true)
     try {
-      const payload = {
-        ...form,
-        organizationId: form.organizationId ? Number(form.organizationId) : undefined,
-        authHeaderName: form.authType === 'HEADER' ? form.authHeaderName : undefined,
-        authQueryParamName: form.authType === 'QUERY_PARAM' ? form.authQueryParamName : undefined
-      }
+      const payload = buildProviderSettingPayload(form)
       if (mode === 'create') {
         await createProviderSetting(payload)
       } else {
@@ -147,157 +116,61 @@ export default function ProviderSettingsPage() {
     }
   }
 
-  async function handleDelete(s) {
-    if (!window.confirm(`"${s.displayName}" 설정을 삭제하시겠습니까?`)) return
+  async function handleDelete() {
+    if (!deleteTarget) return
     try {
-      await deleteProviderSetting(s.id)
-      setSettings(prev => prev.filter(x => x.id !== s.id))
+      await deleteProviderSetting(deleteTarget.id)
+      setSettings(prev => prev.filter(x => x.id !== deleteTarget.id))
+      setDeleteTarget(null)
     } catch (err) {
-      alert(err.message)
+      setError(err.message)
     }
   }
 
   const set = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }))
 
   if (mode === 'create' || mode === 'edit') {
-    // options API 응답 대기 중
     if (form === null) {
       return (
         <>
           <Navbar />
-          <main style={s.main}><LoadingSpinner message="옵션 불러오는 중..." /></main>
+          <main className="pd-page-enter" style={s.main}><LoadingSpinner message="옵션 불러오는 중..." /></main>
         </>
       )
     }
 
-    const isCustom = form.providerType === 'CUSTOM'
     const availableModels = providerModels[form.providerType] ?? []
 
     return (
       <>
         <Navbar />
-        <main style={s.main}>
+        <main className="pd-page-enter" style={s.main}>
           <PageHeader
-            title={mode === 'create' ? '새 Provider 설정 추가' : 'Provider 설정 수정'}
+            title={mode === 'create' ? '새 Provider 프로필 추가' : 'Provider 프로필 수정'}
+            eyebrow="Provider Profile"
+            description="실행 화면에서 재사용할 Provider와 모델 조합을 구성합니다."
             actionLabel="목록으로"
             onAction={cancel}
           />
 
-          <Tabs
-            tabs={[
-              { key: 'basic', label: '기본 정보' },
-              { key: 'advanced', label: '고급 설정' }
-            ]}
-            activeTab={tab}
-            onChange={setTab}
+          <ProviderSettingForm
+            mode={mode}
+            form={form}
+            tab={tab}
+            saving={saving}
+            error={formError}
+            organizations={organizations}
+            providerTypes={providerTypes}
+            httpMethods={httpMethods}
+            authTypes={authTypes}
+            availableModels={availableModels}
+            onTabChange={setTab}
+            onProviderTypeChange={handleProviderTypeChange}
+            onFieldChange={set}
+            onSubmit={handleSubmit}
+            onCancel={cancel}
+            styles={s}
           />
-
-          <form onSubmit={handleSubmit} style={s.form}>
-            {tab === 'basic' && (
-              <>
-                <FormField label="Provider 타입">
-                  <select style={s.input} value={form.providerType} onChange={handleProviderTypeChange}>
-                    {providerTypes.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                </FormField>
-                <FormField label="조직" hint={mode === 'edit' ? '수정 시 조직은 변경되지 않습니다' : '선택하지 않으면 개인 설정으로 저장됩니다'}>
-                  <select style={{ ...s.input, ...(mode === 'edit' ? s.inputLocked : {}) }} value={form.organizationId} onChange={set('organizationId')} disabled={mode === 'edit'}>
-                    <option value="">개인</option>
-                    {organizations.map(org => (
-                      <option key={org.id} value={org.id}>{org.name}</option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField label="표시 이름">
-                  <input style={s.input} required value={form.displayName} onChange={set('displayName')} placeholder="My GPT-4 Setting" />
-                </FormField>
-                <FormField label="모델명">
-                  {isCustom ? (
-                    <input style={s.input} required value={form.model} onChange={set('model')} placeholder="your-model-name" />
-                  ) : (
-                    <select style={s.input} value={form.model} onChange={set('model')}>
-                      {availableModels.map(m => <option key={m}>{m}</option>)}
-                    </select>
-                  )}
-                </FormField>
-                <FormField label="엔드포인트 URL" hint={!isCustom ? '프리셋 자동완성' : undefined}>
-                  {isCustom ? (
-                    <input
-                      style={s.input}
-                      required
-                      value={form.endpoint}
-                      onChange={set('endpoint')}
-                      placeholder="https://api.example.com/v1/chat"
-                    />
-                  ) : (
-                    <select style={{ ...s.input, ...s.inputLocked }} value={form.endpoint} onChange={set('endpoint')} disabled>
-                      <option value={form.endpoint}>{form.endpoint}</option>
-                    </select>
-                  )}
-                </FormField>
-                <FormField label="HTTP 메서드" hint={!isCustom ? '프리셋 자동완성' : undefined}>
-                  <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.method} onChange={set('method')} disabled={!isCustom}>
-                    {httpMethods.map(m => <option key={m}>{m}</option>)}
-                  </select>
-                </FormField>
-                <FormField label="인증 방식" hint={!isCustom ? '프리셋 자동완성' : undefined}>
-                  <select style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }} value={form.authType} onChange={set('authType')} disabled={!isCustom}>
-                    {authTypes.map(a => <option key={a}>{a}</option>)}
-                  </select>
-                </FormField>
-                {form.authType === 'HEADER' && (
-                  <FormField label="인증 헤더명">
-                    <input style={s.input} value={form.authHeaderName} onChange={set('authHeaderName')} placeholder="X-API-Key" />
-                  </FormField>
-                )}
-                {form.authType === 'QUERY_PARAM' && (
-                  <FormField label="인증 쿼리 파라미터명">
-                    <input style={s.input} value={form.authQueryParamName} onChange={set('authQueryParamName')} placeholder="api_key" />
-                  </FormField>
-                )}
-                <FormField label="응답 추출 경로 (JSONPath)" hint={!isCustom ? '프리셋 자동완성' : undefined}>
-                  <input
-                    style={{ ...s.input, ...(!isCustom ? s.inputLocked : {}) }}
-                    value={form.responsePath}
-                    onChange={set('responsePath')}
-                    disabled={!isCustom}
-                    placeholder={isCustom ? 'choices[0].message.content' : undefined}
-                  />
-                </FormField>
-              </>
-            )}
-
-            {tab === 'advanced' && (
-              <>
-                <FormField label="헤더 JSON" hint={'예: {"X-Custom": "value"}'}>
-                  <textarea style={s.textarea} value={form.headersJson} onChange={set('headersJson')} rows={3} />
-                </FormField>
-                <FormField label="쿼리 파라미터 JSON" hint={'예: {"version": "2024-01"}'}>
-                  <textarea style={s.textarea} value={form.queryParamsJson} onChange={set('queryParamsJson')} rows={3} />
-                </FormField>
-                <FormField label="바디 템플릿 JSON" hint={!isCustom ? '프리셋 자동완성 — 수정하려면 CUSTOM 타입을 사용하세요' : '{{prompt}}, {{model}} 등 변수 사용 가능'}>
-                  <textarea
-                    style={{ ...s.textarea, ...(!isCustom ? s.inputLocked : {}) }}
-                    value={form.bodyTemplateJson}
-                    onChange={set('bodyTemplateJson')}
-                    rows={6}
-                    disabled={!isCustom}
-                  />
-                </FormField>
-                <FormField label="옵션 스키마 JSON" hint="사용자 정의 옵션 필드 스키마">
-                  <textarea style={s.textarea} value={form.optionSchemaJson} onChange={set('optionSchemaJson')} rows={4} />
-                </FormField>
-              </>
-            )}
-
-            {formError && <p style={s.error}>{formError}</p>}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-              <Button type="submit" loading={saving}>
-                {mode === 'create' ? '생성' : '수정'}
-              </Button>
-              <Button variant="outline" type="button" onClick={cancel}>취소</Button>
-            </div>
-          </form>
         </main>
       </>
     )
@@ -306,61 +179,49 @@ export default function ProviderSettingsPage() {
   return (
     <>
       <Navbar />
-      <main style={s.main}>
-        <PageHeader title="Provider 설정 관리" actionLabel="+ 설정 추가" onAction={openCreate} />
+      <main className="pd-page-enter" style={s.main}>
+        <PageHeader
+          title="Provider 프로필"
+          eyebrow="Models"
+          description="Provider, 모델, CUSTOM 연결 방식을 프로필로 저장하고 실행 페이지에서 바로 선택합니다."
+          actionLabel="새 프로필"
+          onAction={openCreate}
+        />
 
         {loading && <LoadingSpinner />}
         {error && <p style={s.error}>{error}</p>}
         {!loading && settings.length === 0 && (
-          <EmptyState message="등록된 Provider 설정이 없습니다. 위에서 추가해보세요." />
+          <EmptyState message="등록된 Provider 프로필이 없습니다. 위에서 추가해보세요." />
         )}
 
         <div style={s.list}>
           {settings.map(item => (
-            <div key={item.id} style={s.card}>
-              <div style={s.cardLeft}>
-                <Badge>{item.providerType}</Badge>
-                <div>
-                  <p style={s.cardTitle}>{item.displayName}</p>
-                  <p style={s.cardSub}>{item.model} · {item.endpoint}</p>
-                  <p style={s.cardSub}>인증: {item.authType} · 메서드: {item.method}</p>
-                </div>
-              </div>
-              <div style={s.cardActions}>
-                <Button variant="outline" size="sm" onClick={() => openEdit(item)}>수정</Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>삭제</Button>
-              </div>
-            </div>
+            <ProviderSettingCard
+              key={item.id}
+              setting={item}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+              styles={s}
+            />
           ))}
         </div>
+        <Modal
+          isOpen={Boolean(deleteTarget)}
+          onClose={() => setDeleteTarget(null)}
+          title="Provider 프로필 삭제"
+          width="420px"
+          footer={(
+            <>
+              <Button variant="outline" onClick={() => setDeleteTarget(null)}>취소</Button>
+              <Button variant="danger" onClick={handleDelete}>삭제</Button>
+            </>
+          )}
+        >
+          <p style={s.confirmText}>
+            {deleteTarget ? `"${deleteTarget.displayName}" 프로필을 삭제합니다.` : ''}
+          </p>
+        </Modal>
       </main>
     </>
   )
-}
-
-const s = {
-  main: { maxWidth: '860px', margin: '40px auto', padding: '0 24px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-  heading: { fontSize: '22px', fontWeight: 700 },
-  addBtn: { padding: '8px 18px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 },
-  tabs: { display: 'flex', gap: '4px', marginBottom: '20px' },
-  tab: { padding: '8px 20px', border: '1px solid #d1d5db', borderRadius: '8px', background: '#f9fafb', cursor: 'pointer', fontSize: '14px', fontWeight: 500 },
-  tabActive: { background: '#4f46e5', color: '#fff', borderColor: '#4f46e5' },
-  form: { background: '#fff', padding: '28px', borderRadius: '12px', boxShadow: '0 1px 8px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: '14px' },
-  input: { padding: '9px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', outline: 'none' },
-  inputLocked: { background: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed', borderColor: '#e5e7eb' },
-  textarea: { padding: '9px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', fontFamily: 'monospace', outline: 'none', resize: 'vertical' },
-  submitBtn: { padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' },
-  cancelBtn: { padding: '8px 18px', background: 'transparent', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 },
-  error: { color: '#ef4444', fontSize: '13px' },
-  info: { color: '#6b7280', fontSize: '14px', marginTop: '24px' },
-  list: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  card: { background: '#fff', padding: '18px 20px', borderRadius: '10px', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-  cardLeft: { display: 'flex', alignItems: 'flex-start', gap: '14px' },
-  badge: { display: 'inline-block', padding: '3px 10px', background: '#ede9fe', color: '#6d28d9', borderRadius: '20px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', marginTop: '2px' },
-  cardTitle: { fontSize: '15px', fontWeight: 700, marginBottom: '3px' },
-  cardSub: { fontSize: '12px', color: '#6b7280', marginBottom: '2px' },
-  cardActions: { display: 'flex', gap: '8px' },
-  editBtn: { padding: '5px 14px', background: 'transparent', border: '1px solid #93c5fd', borderRadius: '6px', color: '#3b82f6', cursor: 'pointer', fontSize: '13px' },
-  deleteBtn: { padding: '5px 14px', background: 'transparent', border: '1px solid #fca5a5', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '13px' }
 }

@@ -1,28 +1,33 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { PageHeader, Card } from '../components/ui'
+import { dashboardPageStyles as styles } from '../styles/pageStyles/dashboardPageStyles'
 
 const FEATURES = [
   {
-    title: 'Provider Key 관리',
+    stat: 'Keys',
+    title: 'API Key 관리',
     description: 'OpenAI, Gemini, Claude 등 LLM Provider의 API Key를 안전하게 등록하고 관리합니다.',
     link: '/providers',
     label: '관리하기'
   },
   {
-    title: 'Provider 설정 관리',
-    description: '엔드포인트, 인증 방식, 바디 템플릿 등 Provider 호출 설정 프리셋을 만들고 관리합니다.',
+    stat: 'Models',
+    title: 'Provider 프로필',
+    description: 'Provider와 모델 조합을 저장하고, CUSTOM Provider의 연결 방식을 관리합니다.',
     link: '/provider-settings',
     label: '관리하기'
   },
   {
-    title: '요청 실행',
-    description: 'Provider Key와 설정을 선택하고 프롬프트를 입력해 LLM API 요청을 빌드·실행합니다.',
+    stat: 'Run',
+    title: '실행',
+    description: 'Provider 프로필과 API Key를 선택하고 프롬프트, 옵션, 프리셋을 관리합니다.',
     link: '/execution',
     label: '실행하기'
   },
   {
-    title: '요청 기록',
+    stat: 'Logs',
+    title: '실행 기록',
     description: '과거 요청의 Provider, 설정, 요청/응답 내용, 소요 시간, 오류를 확인합니다.',
     link: '/history',
     label: '기록 보기'
@@ -33,12 +38,26 @@ export default function DashboardPage() {
   return (
     <>
       <Navbar />
-      <main style={styles.main}>
-        <PageHeader title="대시보드" />
-        <p style={styles.desc}>PromptDeck에 오신 것을 환영합니다. 아래 기능을 사용해보세요.</p>
+      <main className="pd-page-enter" style={styles.main}>
+        <section className="pd-hero" style={styles.hero}>
+          <div>
+            <p style={styles.eyebrow}>LLM workflow console</p>
+            <h1 style={styles.heroTitle}>PromptDeck</h1>
+            <p style={styles.heroDesc}>Provider, Key, Preset, History를 한 화면 흐름으로 연결해 빠르게 실험하고 재사용하는 실행 콘솔입니다.</p>
+          </div>
+          <Link to="/execution" style={styles.heroAction}>바로 실행</Link>
+        </section>
+        <PageHeader
+          title="워크스페이스"
+          eyebrow="Overview"
+          description="자주 쓰는 관리 화면과 실행 흐름으로 빠르게 이동합니다."
+        />
         <div style={styles.grid}>
           {FEATURES.map(f => (
-            <Card key={f.title} hoverable style={styles.card}>
+            <Card key={f.title} hoverable className={`pd-stagger-${indexForFeature(f.title)}`} style={styles.card}>
+              <div style={styles.cardTop}>
+                <span style={styles.cardStat}>{f.stat}</span>
+              </div>
               <h3 style={styles.cardTitle}>{f.title}</h3>
               <p style={styles.cardDesc}>{f.description}</p>
               <Link
@@ -59,36 +78,7 @@ export default function DashboardPage() {
   )
 }
 
-const styles = {
-  main: { maxWidth: '900px', margin: '40px auto', padding: '0 24px' },
-  heading: { fontSize: '22px', fontWeight: 700, marginBottom: '8px' },
-  desc: { fontSize: '14px', color: '#6b7280', marginBottom: '32px' },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-    gap: '20px'
-  },
-  card: {
-    background: '#fff',
-    borderRadius: '10px',
-    padding: '24px',
-    boxShadow: '0 1px 8px rgba(0,0,0,0.07)'
-  },
-  cardTitle: { fontSize: '16px', fontWeight: 700, marginBottom: '10px' },
-  cardDesc: { fontSize: '13px', color: '#6b7280', lineHeight: 1.6, marginBottom: '16px' },
-  cardLink: {
-    display: 'inline-block',
-    padding: '7px 16px',
-    background: '#4f46e5',
-    color: '#fff',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: 600,
-    textDecoration: 'none'
-  },
-  cardLinkDisabled: {
-    background: '#e5e7eb',
-    color: '#9ca3af',
-    cursor: 'not-allowed'
-  }
+function indexForFeature(title) {
+  const index = FEATURES.findIndex(feature => feature.title === title)
+  return Math.min(index + 1, 4)
 }

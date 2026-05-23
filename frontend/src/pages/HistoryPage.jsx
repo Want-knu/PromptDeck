@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar'
 import { PageHeader, Card, Button, Badge, LoadingSpinner, EmptyState } from '../components/ui'
 import { getExecutionHistory } from '../api/executions'
 import { getOrganizations } from '../api/organizations'
+import { historyPageStyles as s } from '../styles/pageStyles/historyPageStyles'
 
 export default function HistoryPage() {
   const [history, setHistory] = useState([])
@@ -50,10 +51,16 @@ export default function HistoryPage() {
   return (
     <>
       <Navbar />
-      <main style={s.main}>
-        <PageHeader title="요청 기록" actionLabel="새로고침" onAction={fetchHistory} />
+      <main className="pd-page-enter" style={s.main}>
+        <PageHeader
+          title="요청 기록"
+          eyebrow="Observability"
+          description="실행한 요청의 결과, 원본 응답, 소요 시간과 오류를 다시 확인합니다."
+          actionLabel="새로고침"
+          onAction={fetchHistory}
+        />
 
-        <div style={s.filterRow}>
+        <div className="pd-card pd-stagger-1" style={s.filterRow}>
           <label style={s.filterLabel} htmlFor="history-organization">조직</label>
           <select
             id="history-organization"
@@ -71,7 +78,7 @@ export default function HistoryPage() {
         {loading && <LoadingSpinner />}
         {error && <p style={s.error}>{error}</p>}
         {!loading && history.length === 0 && (
-          <EmptyState message="실행 기록이 없습니다. 요청 실행 페이지에서 먼저 실행해보세요." />
+          <EmptyState message="실행 기록이 없습니다. 실행 페이지에서 먼저 요청을 실행해보세요." />
         )}
 
         <div style={s.list}>
@@ -81,7 +88,7 @@ export default function HistoryPage() {
             const badgeText = h.success == null ? `- ${h.statusCode ?? ''}` : `${h.success ? '성공' : '실패'} ${h.statusCode ?? ''}`
 
             return (
-              <Card key={h.id} style={s.card}>
+              <Card key={h.id} className="pd-stagger-1" style={s.card}>
                 <div style={s.row} onClick={() => toggleExpand(h.id)}>
                   <div style={s.rowLeft}>
                     <Badge variant={badgeVariant}>{badgeText}</Badge>
@@ -94,7 +101,7 @@ export default function HistoryPage() {
                 </div>
 
                 {isExpanded && (
-                  <div style={s.detail}>
+                <div className="pd-result-enter" style={s.detail}>
                     {h.parsedResponse && (
                       <>
                         <p style={s.detailLabel}>파싱된 응답</p>
@@ -137,30 +144,4 @@ export default function HistoryPage() {
       </main>
     </>
   )
-}
-
-const s = {
-  main: { maxWidth: '860px', margin: '40px auto', padding: '0 24px' },
-  filterRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' },
-  filterLabel: { fontSize: '13px', fontWeight: 600, color: '#374151' },
-  select: { padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', outline: 'none' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-  heading: { fontSize: '22px', fontWeight: 700 },
-  refreshBtn: { padding: '8px 16px', background: 'transparent', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 },
-  info: { color: '#6b7280', fontSize: '14px' },
-  error: { color: '#ef4444', fontSize: '13px' },
-  list: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  card: { background: '#fff', borderRadius: '10px', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', overflow: 'hidden' },
-  row: { padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' },
-  rowLeft: { display: 'flex', alignItems: 'center', gap: '14px' },
-  badge: { padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' },
-  cardTitle: { fontSize: '14px', fontWeight: 700, marginBottom: '2px' },
-  cardSub: { fontSize: '12px', color: '#6b7280' },
-  toggle: { fontSize: '11px', color: '#9ca3af' },
-  detail: { borderTop: '1px solid #f3f4f6', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '6px' },
-  detailLabel: { fontSize: '12px', fontWeight: 600, color: '#6b7280', marginTop: '8px', marginBottom: '4px' },
-  parsedBox: { background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '12px', fontSize: '14px', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
-  pre: { background: '#1e293b', color: '#e2e8f0', borderRadius: '8px', padding: '12px', fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' },
-  metaRow: { display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' },
-  metaItem: { fontSize: '11px', color: '#9ca3af' }
 }
