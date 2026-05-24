@@ -148,6 +148,15 @@
   transform: translateX(16px);
 }
 
+.pd-nav-user {
+  font-size: 13px;
+  color: var(--pd-muted);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pd-nav-logout {
   min-height: 38px;
   padding: 0 13px;

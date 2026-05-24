@@ -2,6 +2,17 @@ let accessToken = null
 let refreshPromise = null
 const authListeners = new Set()
 
+const USER_EMAIL_KEY = 'pd-user-email'
+
+export function getUserEmail() {
+  return localStorage.getItem(USER_EMAIL_KEY)
+}
+
+export function setUserEmail(email) {
+  if (email) localStorage.setItem(USER_EMAIL_KEY, email)
+  else localStorage.removeItem(USER_EMAIL_KEY)
+}
+
 const AUTH_URLS = new Set([
   '/api/auth/login',
   '/api/auth/signup',
@@ -20,6 +31,7 @@ export function setAccessToken(token) {
 
 export function clearAccessToken() {
   accessToken = null
+  setUserEmail(null)
   notifyAuthListeners()
 }
 

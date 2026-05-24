@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../api/auth'
-import { getAccessToken, refreshAccessToken, setAccessToken } from '../api/client'
+import { getAccessToken, refreshAccessToken, setAccessToken, setUserEmail } from '../api/client'
 import AuthShell from '../components/auth/AuthShell'
 import { Button } from '../components/ui'
 import { authStyles } from '../styles/pageStyles/authPageStyles'
@@ -39,6 +39,7 @@ export default function LoginPage() {
     try {
       const res = await login(email, password)
       setAccessToken(res.accessToken)
+      setUserEmail(email)
       navigate('/')
     } catch (err) {
       setError(err.message)

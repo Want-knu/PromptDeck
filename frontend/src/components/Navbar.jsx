@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { logout } from '../api/auth'
-import { getAccessToken, subscribeAuth } from '../api/client'
+import { getAccessToken, getUserEmail, subscribeAuth } from '../api/client'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -61,6 +61,9 @@ export default function Navbar() {
                   />
                 </span>
               </button>
+              {getUserEmail() && (
+                <span className="pd-nav-user">{getUserEmail()}</span>
+              )}
               <button className="pd-nav-logout" onClick={handleLogout}>로그아웃</button>
             </>
           ) : (
