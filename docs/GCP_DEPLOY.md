@@ -10,7 +10,7 @@ GCP Compute Engine VM 1대에 docker-compose로 PromptDeck 전체 스택(MySQL +
                               └─ MySQL 8(3306, 내부망 전용)
 ```
 
-세 컨테이너는 Docker bridge 네트워크 `promptdeck-network`로 묶여 있으며, 외부에는 nginx의 80번 포트만 노출된다.
+세 컨테이너는 Docker bridge 네트워크 `promptdeck-network`로 묶여 있으며, 외부에는 nginx의 80번 포트만 노출된다. Spring Boot 8080과 MySQL 3306은 컨테이너 내부 네트워크에서만 접근한다.
 
 ## 2. VM 사양
 
@@ -60,10 +60,8 @@ MYSQL_ROOT_PASSWORD=<위에서 생성>
 MYSQL_DATABASE=promptdeck
 MYSQL_USER=promptdeck
 MYSQL_PASSWORD=<위에서 생성>
-MYSQL_PORT=3306
 
 JWT_SECRET=<위에서 생성>
-BACKEND_PORT=8080
 PROVIDER_API_KEY_PASSWORD=<위에서 생성>
 PROVIDER_API_KEY_SALT=<위 hex 값>
 
@@ -84,10 +82,13 @@ docker compose up -d --build
 확인:
 
 ```bash
-docker compose ps                    # 세 컨테이너 모두 Up
+docker compose ps                     # 세 컨테이너 모두 Up
 docker compose logs backend --tail=15  # "Started PromtDeckApplication" 확인
-curl -I http://localhost             # 200 OK
+curl -I http://localhost              # 200 OK
+curl -i http://localhost/api/provider-keys  # 401이면 nginx -> backend 프록시 정상
 ```
+
+`docker compose ps`에서 외부 포트 매핑은 `promptdeck-frontend`의 80번만 표시되는 것이 정상이다. `promptdeck-backend`와 `promptdeck-mysql`은 Docker 내부 네트워크에서만 사용한다.
 
 ## 6. JVM 메모리 튜닝
 
