@@ -107,7 +107,7 @@ class RequestExecutionServiceTest {
 
         ProviderHttpRequest httpRequest = new ProviderHttpRequest(
                 HttpMethodType.POST,
-                "https://api.openai.com/v1/responses",
+                "https://api.openai.com/v1/responses?key=secret",
                 Map.of("Authorization", "Bearer secret"),
                 Map.of("input", "Explain interfaces")
         );
@@ -156,5 +156,7 @@ class RequestExecutionServiceTest {
         assertThat(history.getParsedResponse()).isEqualTo("parsed answer");
         assertThat(history.getDurationMs()).isNotNegative();
         assertThat(history.getRequestJson()).contains("Explain interfaces");
+        assertThat(history.getRequestJson()).contains("****");
+        assertThat(history.getRequestJson()).doesNotContain("secret");
     }
 }

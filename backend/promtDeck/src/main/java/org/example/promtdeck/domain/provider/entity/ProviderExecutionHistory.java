@@ -30,7 +30,7 @@ public class ProviderExecutionHistory {
     @Column(nullable = false)
     private Long providerSettingId;
 
-    @Column(nullable = false)
+    @Column
     private Long providerKeyId;
 
     @Column(nullable = false)

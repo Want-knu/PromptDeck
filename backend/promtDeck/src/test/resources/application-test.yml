@@ -22,4 +22,5 @@ auth:
 
 provider:
   api-key-password: test_provider_password_32_chars!!
-  api-key-salt: test_provider_salt
+  # Encryptors.delux는 salt를 Hex.decode하므로 반드시 hex 문자열이어야 한다(짝수 길이).
+  api-key-salt: 0123456789abcdef0123456789abcdef

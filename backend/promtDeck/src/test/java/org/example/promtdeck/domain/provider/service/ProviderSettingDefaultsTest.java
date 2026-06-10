@@ -43,7 +43,7 @@ class ProviderSettingDefaultsTest {
     void geminiEndpointIsBuiltFromModel() {
         ProviderSettingDefaults.ResolvedSetting resolved = ProviderSettingDefaults.resolve(
                 ProviderType.GEMINI,
-                "gemini-1.5-flash",
+                "gemini-2.5-flash",
                 null,
                 null,
                 null,
@@ -56,7 +56,7 @@ class ProviderSettingDefaultsTest {
                 null
         );
 
-        assertThat(resolved.endpoint()).isEqualTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent");
+        assertThat(resolved.endpoint()).isEqualTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent");
         assertThat(resolved.authType()).isEqualTo(AuthType.QUERY_PARAM);
         assertThat(resolved.authQueryParamName()).isEqualTo("key");
     }
@@ -129,6 +129,39 @@ class ProviderSettingDefaultsTest {
                 AuthType.QUERY_PARAM,
                 null,
                 "",
+                null,
+                null,
+                null,
+                null,
+                null
+        )).isInstanceOf(CustomException.class);
+    }
+
+    @Test
+    void customProviderRejectsLocalAndPrivateEndpoints() {
+        assertThatThrownBy(() -> ProviderSettingDefaults.resolve(
+                ProviderType.CUSTOM,
+                "my-model",
+                "http://localhost:8080/run",
+                HttpMethodType.POST,
+                AuthType.NONE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        )).isInstanceOf(CustomException.class);
+
+        assertThatThrownBy(() -> ProviderSettingDefaults.resolve(
+                ProviderType.CUSTOM,
+                "my-model",
+                "http://192.168.0.10/run",
+                HttpMethodType.POST,
+                AuthType.NONE,
+                null,
+                null,
                 null,
                 null,
                 null,

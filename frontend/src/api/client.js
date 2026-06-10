@@ -2,6 +2,17 @@ let accessToken = null
 let refreshPromise = null
 const authListeners = new Set()
 
+const USER_EMAIL_KEY = 'pd-user-email'
+
+export function getUserEmail() {
+  return localStorage.getItem(USER_EMAIL_KEY)
+}
+
+export function setUserEmail(email) {
+  if (email) localStorage.setItem(USER_EMAIL_KEY, email)
+  else localStorage.removeItem(USER_EMAIL_KEY)
+}
+
 const AUTH_URLS = new Set([
   '/api/auth/login',
   '/api/auth/signup',
@@ -20,6 +31,7 @@ export function setAccessToken(token) {
 
 export function clearAccessToken() {
   accessToken = null
+  setUserEmail(null)
   notifyAuthListeners()
 }
 
@@ -56,6 +68,42 @@ export async function readJsonResponse(res, fallbackMessage) {
     throw new Error(data?.message || fallbackMessage)
   }
   return data
+}
+
+export async function apiGet(url, fallbackMessage = '조회 실패') {
+  const res = await apiFetch(url, { headers: authHeaders() })
+  const data = await readJsonResponse(res, fallbackMessage)
+  return data.data
+}
+
+export async function apiPost(url, body, fallbackMessage = '요청 실패') {
+  const res = await apiFetch(url, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(body)
+  })
+  const data = await readJsonResponse(res, fallbackMessage)
+  return data.data
+}
+
+export async function apiPut(url, body, fallbackMessage = '수정 실패') {
+  const res = await apiFetch(url, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(body)
+  })
+  const data = await readJsonResponse(res, fallbackMessage)
+  return data.data
+}
+
+export async function apiDelete(url, fallbackMessage = '삭제 실패') {
+  const res = await apiFetch(url, {
+    method: 'DELETE',
+    headers: authHeaders()
+  })
+  if (!res.ok) {
+    await readJsonResponse(res, fallbackMessage)
+  }
 }
 
 export async function refreshAccessToken() {

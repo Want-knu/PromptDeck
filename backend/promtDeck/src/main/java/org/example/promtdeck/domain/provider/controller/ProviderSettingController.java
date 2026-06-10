@@ -47,8 +47,10 @@ public class ProviderSettingController {
     }
 
     @GetMapping("/options")
-    public ResponseEntity<ApiResponse<ProviderSettingOptionsResponse>> findOptions() {
-        ProviderSettingOptionsResponse response = providerSettingService.findOptions();
+    public ResponseEntity<ApiResponse<ProviderSettingOptionsResponse>> findOptions(
+            @AuthenticationPrincipal Long userId
+    ) {
+        ProviderSettingOptionsResponse response = providerSettingService.findOptions(userId);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Provider 설정 옵션을 조회했습니다.", response)

@@ -1,29 +1,19 @@
-import { apiFetch, authHeaders, readJsonResponse } from './client'
+import { apiDelete, apiGet, apiPost, apiPut } from './client'
 
 const BASE = '/api/provider-keys'
 
 export async function getProviderKeys() {
-  const res = await apiFetch(BASE, { headers: authHeaders() })
-  const data = await readJsonResponse(res, '조회 실패')
-  return data.data
+  return apiGet(BASE, '조회 실패')
 }
 
 export async function createProviderKey(providerType, apiKey, displayName) {
-  const res = await apiFetch(BASE, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ providerType, apiKey, displayName })
-  })
-  const data = await readJsonResponse(res, '등록 실패')
-  return data.data
+  return apiPost(BASE, { providerType, apiKey, displayName }, '등록 실패')
+}
+
+export async function updateProviderKey(id, body) {
+  return apiPut(`${BASE}/${id}`, body, '수정 실패')
 }
 
 export async function deleteProviderKey(id) {
-  const res = await apiFetch(`${BASE}/${id}`, {
-    method: 'DELETE',
-    headers: authHeaders()
-  })
-  if (!res.ok) {
-    await readJsonResponse(res, '삭제 실패')
-  }
+  return apiDelete(`${BASE}/${id}`, '삭제 실패')
 }
