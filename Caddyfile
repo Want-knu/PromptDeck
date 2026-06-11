@@ -1,0 +1,5 @@
+# HTTPS 리버스 프록시 (VM 전용 — COMPOSE_PROFILES=https일 때만 기동)
+# Let's Encrypt 인증서 발급·갱신, HTTP→HTTPS 리다이렉트 자동 처리
+promptdeck.duckdns.org {
+    reverse_proxy frontend:80
+}

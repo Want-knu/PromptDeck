@@ -65,11 +65,12 @@ JWT_SECRET=<위에서 생성>
 PROVIDER_API_KEY_PASSWORD=<위에서 생성>
 PROVIDER_API_KEY_SALT=<위 hex 값>
 
-FRONTEND_PORT=80
-AUTH_ALLOWED_ORIGINS=http://<VM 외부 IP>
+FRONTEND_PORT=3000
+AUTH_ALLOWED_ORIGINS=https://promptdeck.duckdns.org
+COMPOSE_PROFILES=https
 ```
 
-`FRONTEND_PORT=80`으로 두면 별도 포트 없이 `http://<IP>`로 바로 접속 가능.
+HTTPS 구성(11장)에서는 Caddy가 80/443을 차지하므로 `FRONTEND_PORT`는 3000으로 둔다(방화벽이 3000을 막고 있어 외부 노출 없음). HTTPS 없이 IP로만 띄우는 경우 `FRONTEND_PORT=80`, `AUTH_ALLOWED_ORIGINS=http://<VM 외부 IP>`로 설정하고 `COMPOSE_PROFILES` 줄을 제거.
 
 ## 5. 실행
 
@@ -121,7 +122,16 @@ gcloud compute instances start promptdeck-vm --zone=asia-northeast3-a
 
 ## 8. 재기동 시 주의
 
-Ephemeral IP는 VM 시작마다 바뀐다. 시작 후 `AUTH_ALLOWED_ORIGINS`을 새 IP로 갱신해야 로그인이 동작:
+Ephemeral IP는 VM 시작마다 바뀐다. HTTPS 구성(11장) 사용 시 도메인이 고정 주소 역할을 하므로 `.env`는 건드릴 필요 없고, **DuckDNS에 새 IP만 알려주면 된다**:
+
+```bash
+curl -s "https://www.duckdns.org/update?domains=promptdeck&token=<DuckDNS 토큰>&ip=$(curl -s ifconfig.me)"
+# 응답 OK 확인. 이후 https://promptdeck.duckdns.org 로 접속
+```
+
+(아래 12장의 cron을 등록해두면 이 작업도 자동화된다.)
+
+HTTPS 없이 IP로만 운영하는 경우에는 기존 방식대로 `AUTH_ALLOWED_ORIGINS`을 갱신:
 
 ```bash
 cd ~/PromptDeck
@@ -149,3 +159,32 @@ echo "새 주소: http://$NEW_IP"
 
 - GCP 콘솔 → VM 인스턴스 → 삭제 (디스크도 함께 제거)
 - 결제 보고서에서 잔여 청구 확인
+
+## 11. HTTPS (DuckDNS + Caddy)
+
+`https://promptdeck.duckdns.org` 로 서비스하는 구성. 도메인·인증서 모두 무료.
+
+```
+브라우저 → 방화벽(80,443) → Caddy(인증서 자동 발급/갱신, TLS 종료)
+                              └→ nginx(frontend) → Spring Boot → MySQL
+```
+
+- **도메인**: [DuckDNS](https://www.duckdns.org)에 `promptdeck` 서브도메인 등록, IP는 VM 외부 IP로 설정 (계정: 팀 공용 확인)
+- **방화벽**: VM에 `http-server`, `https-server` 태그 (80은 Let's Encrypt 발급 검증에 필수)
+- **컨테이너**: `docker-compose.yml`의 `caddy` 서비스가 담당. `profiles: [https]`로 묶여 있어 `.env`에 `COMPOSE_PROFILES=https`가 있는 VM에서만 기동된다. **로컬 개발 환경에는 영향 없음.**
+- **설정 파일**: 리포 루트의 `Caddyfile` (도메인 변경 시 이 파일 수정)
+- 인증서는 `caddy-data` 볼륨에 보관되어 컨테이너를 재생성해도 재발급되지 않는다 (Let's Encrypt는 발급 횟수 제한이 있으므로 볼륨을 지우지 말 것).
+
+문제 발생 시 `docker logs promptdeck-caddy`에서 인증서 발급 로그 확인.
+
+## 12. DuckDNS 자동 갱신 (cron)
+
+VM IP가 바뀌어도 도메인이 따라오도록 VM에 cron 등록:
+
+```bash
+crontab -e
+# 아래 한 줄 추가 (5분마다 현재 IP를 DuckDNS에 보고)
+*/5 * * * * curl -s "https://www.duckdns.org/update?domains=promptdeck&token=<DuckDNS 토큰>&ip=" >/dev/null 2>&1
+```
+
+`ip=` 를 비워두면 DuckDNS가 요청 발신 IP(=VM IP)를 자동 인식한다.

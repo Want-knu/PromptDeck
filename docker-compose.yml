@@ -57,8 +57,27 @@ services:
     networks:
       - promptdeck-network
 
+  # HTTPS 진입점 (VM 전용). .env에 COMPOSE_PROFILES=https가 있을 때만 기동.
+  caddy:
+    image: caddy:2-alpine
+    container_name: promptdeck-caddy
+    restart: unless-stopped
+    profiles:
+      - https
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - frontend
+    networks:
+      - promptdeck-network
+
 volumes:
   mysql-data:
+  caddy-data:
 
 networks:
   promptdeck-network:
