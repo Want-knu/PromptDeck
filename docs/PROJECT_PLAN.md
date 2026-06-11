@@ -14,7 +14,7 @@
 
 PromptDeck은 GCP 서버에 배포되는 LLM API 요청 빌더 웹 서비스이다.
 
-사용자는 로그인 후 OpenAI, Gemini, Claude, Custom API 등 여러 LLM Provider의 요청 형식을 설정하고, 자주 사용하는 프롬프트 프리셋을 저장한 뒤, 선택한 Provider로 요청을 실행할 수 있다. 실행 결과와 요청 기록은 MySQL에 저장되며, 사용자별로 Provider 설정, 프리셋, API Key 기록, 실행 히스토리가 분리된다.
+사용자는 로그인 후 OpenAI, Gemini, Claude, Custom API 등 여러 LLM Provider의 요청 형식을 설정하고, 자주 사용하는 실행 프리셋을 저장한 뒤, 선택한 Provider로 요청을 실행할 수 있다. 실행 결과와 요청 기록은 MySQL에 저장되며, 사용자별로 Provider 설정, 실행 프리셋, API Key 기록, 실행 히스토리가 분리된다.
 
 ## 2. 프로젝트 배경
 
@@ -23,7 +23,7 @@ LLM API는 Provider마다 endpoint, header, request body, response format이 다
 PromptDeck은 이러한 문제를 줄이기 위해 다음 기능을 제공한다.
 
 - Provider별 요청 형식 관리
-- 프롬프트 프리셋 저장 및 재사용
+- 실행 프리셋 저장 및 재사용
 - API 요청 JSON 미리보기
 - 실제 LLM API 요청 실행
 - 요청/응답 기록 저장
@@ -36,8 +36,8 @@ PromptDeck은 이러한 문제를 줄이기 위해 다음 기능을 제공한다
 
 - 사용자가 회원가입 또는 로그인 후 서비스를 이용할 수 있다.
 - 사용자가 자신의 LLM Provider 설정을 등록, 조회, 수정, 삭제할 수 있다.
-- 사용자가 자신의 프롬프트 프리셋을 등록, 조회, 수정, 삭제할 수 있다.
-- 사용자가 선택한 Provider와 프리셋을 조합해 API 요청을 생성할 수 있다.
+- 사용자가 자신의 실행 프리셋을 등록, 조회, 수정, 삭제할 수 있다.
+- 사용자가 선택한 Provider 설정과 실행 프리셋을 조합해 API 요청을 생성할 수 있다.
 - 생성된 요청 JSON을 실행 전에 확인할 수 있다.
 - 사용자가 Provider API Key를 보안 저장하고, 저장 상태 확인과 삭제를 할 수 있다.
 - 요청 결과와 오류 정보를 사용자별 기록으로 저장할 수 있다.
@@ -58,12 +58,12 @@ MVP에서 구현할 기능은 다음과 같다.
 
 - 회원가입/로그인 기능
 - 사용자별 Provider 설정 관리
-- 사용자별 프롬프트 프리셋 관리
+- 사용자별 실행 프리셋 관리
 - 요청 JSON 빌더
 - Provider API Key 보안 저장, 마스킹 표시, 삭제 기능
 - LLM 요청 실행
 - 요청/응답 히스토리 저장
-- 간단한 채팅형 테스트 화면
+- 요청 실행 테스트 화면
 - MySQL 기반 데이터 저장
 - GCP 서버 배포
 - Docker 기반 실행 환경
@@ -81,23 +81,23 @@ MVP에서 제외할 기능은 다음과 같다.
 
 ### 5.1 로그인
 
-사용자는 계정을 생성하거나 로그인한 뒤 자신의 Provider 설정, 프리셋, 실행 기록에 접근한다. 로그인 구현 방식은 담당 구현 과정에서 정한다.
+사용자는 계정을 생성하거나 로그인한 뒤 자신의 Provider 설정, 실행 프리셋, 실행 기록에 접근한다. 로그인 구현 방식은 담당 구현 과정에서 정한다.
 
 ### 5.2 Provider 설정
 
 사용자는 OpenAI, Gemini, Claude, Custom API 중 하나를 선택하고, endpoint, model, header, body template 등 요청에 필요한 정보를 설정한다.
 
-### 5.3 프롬프트 프리셋 생성
+### 5.3 실행 프리셋 생성
 
-사용자는 번역, 요약, 코드 리뷰, 글쓰기 보조 등 반복적으로 사용하는 system prompt와 user prompt template을 프리셋으로 저장한다.
+사용자는 번역, 요약, 코드 리뷰, 글쓰기 보조 등 반복적으로 사용하는 요청 입력값과 실행 옵션을 프리셋으로 저장한다.
 
 ### 5.4 요청 생성 및 실행
 
-사용자는 Provider와 프리셋을 선택하고 입력값을 작성한다. PromptDeck은 선택된 Provider의 요청 형식에 맞는 JSON을 생성하고, 사용자가 확인한 뒤 요청을 실행한다.
+사용자는 Provider 설정과 실행 프리셋을 선택하고 입력값을 작성한다. PromptDeck은 선택된 Provider의 요청 형식에 맞는 JSON을 생성하고, 사용자가 확인한 뒤 요청을 실행한다.
 
 ### 5.5 요청 기록 확인
 
-사용자는 과거 요청의 Provider, 프리셋, 요청 본문, 응답 본문, 실행 성공 여부, 오류 메시지 등을 확인한다.
+사용자는 과거 요청의 Provider 설정, 실행 프리셋, 요청 본문, 응답 본문, 실행 성공 여부, 오류 메시지 등을 확인한다.
 
 ## 6. 시스템 구성
 
@@ -109,31 +109,33 @@ GCP
     React + Vite
     - 로그인 화면
     - Provider 설정 화면
-    - 프롬프트 프리셋 관리 화면
+    - 실행 프리셋 관리 화면
     - 요청 JSON 미리보기
-    - 채팅/실행 화면
+    - 요청 실행 화면
     - 요청 기록 화면
 
   Backend
     Java Spring REST API Server
     - Auth API
-    - Provider API
-    - Preset API
-    - Request Builder API
-    - Chat Execution API
+    - Provider API Key API
+    - Provider Setting API
+    - Provider Options API
+    - Execution Preset API
+    - Request Preview API
+    - Provider Execution API
     - History API
-    - Provider API Key 관리 API
     - Provider Adapter Layer
 
   Database
     MySQL
     - users
-    - providers
+    - refresh_tokens
+    - organizations
+    - organization_members
     - provider_api_keys
-    - prompt_presets
-    - chat_sessions
-    - messages
-    - execution_logs
+    - provider_settings
+    - provider_execution_presets
+    - provider_execution_histories
 
 External LLM Providers
   - OpenAI API
@@ -150,8 +152,8 @@ External LLM Providers
 | GitHub Issues | 기능, 버그, 문서 작업을 Issue로 관리 |
 | GitHub Projects | Backlog, Todo, In Progress, Review, Done으로 진행 상황 관리 |
 | Web Framework | Java Spring 기반 백엔드 구현 |
-| REST API | Auth, Provider, Preset, History, Execution API 제공 |
-| Database Integration | MySQL 기반 사용자/프리셋/히스토리 데이터 저장 |
+| REST API | Auth, Provider Key, Provider Setting, Provider Options, Execution Preset, History, Execution API 제공 |
+| Database Integration | MySQL 기반 사용자, refresh token, 조직, Provider 설정, 실행 프리셋, 히스토리 데이터 저장 |
 | Containerization | Dockerfile 및 Docker Compose 구성 |
 | DevOps | GitHub Actions로 테스트/빌드 자동화 |
 | Cloud Environment | GCP 서버 배포 |
@@ -159,7 +161,7 @@ External LLM Providers
 
 ## 8. 데이터 저장 정책
 
-- 사용자 계정, Provider 설정, 프롬프트 프리셋, 요청 기록은 MySQL에 저장한다.
+- 사용자 계정, refresh token, 조직, Provider 설정, 실행 프리셋, 요청 기록은 MySQL에 저장한다.
 - 사용자별 데이터는 로그인 사용자 기준으로 분리한다.
 - Provider API Key는 평문 저장을 금지하고, UI/API 응답에는 저장 여부와 마스킹된 값만 표시한다.
 - 실제 Provider 요청 실행에 필요한 Key 처리 방식은 백엔드 구현에서 보안 저장 정책에 맞춰 적용한다.

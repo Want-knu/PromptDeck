@@ -1,0 +1,106 @@
+.pd-page-enter {
+  animation: pd-fade-up 0.46s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pd-hero {
+  position: relative;
+  isolation: isolate;
+  animation: pd-fade-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both, pd-hero-float 7s ease-in-out infinite;
+}
+
+.pd-hero::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.34) 48%, transparent 58%);
+  transform: translateX(-42%) rotate(8deg);
+  animation: pd-hero-sheen 6.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.pd-card {
+  animation: pd-fade-up 0.44s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pd-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--pd-accent) 42%, var(--pd-border-soft));
+  box-shadow: var(--pd-shadow-lg);
+}
+
+.pd-stagger-1 { animation-delay: 0.04s; }
+.pd-stagger-2 { animation-delay: 0.08s; }
+.pd-stagger-3 { animation-delay: 0.12s; }
+.pd-stagger-4 { animation-delay: 0.16s; }
+
+.pd-pulse-soft {
+  animation: pd-pulse-soft 2.8s ease-in-out infinite;
+}
+
+.pd-result-enter {
+  animation: pd-fade-up 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pd-brand-mark {
+  animation: pd-mark-glow 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes pd-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pd-bg-shift {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 70%; }
+}
+
+@keyframes pd-grid-drift {
+  from { background-position: 0 0; }
+  to { background-position: 42px 42px; }
+}
+
+@keyframes pd-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pd-hero-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes pd-hero-sheen {
+  0%, 36% { transform: translateX(-48%) rotate(8deg); opacity: 0; }
+  48% { opacity: 1; }
+  64%, 100% { transform: translateX(48%) rotate(8deg); opacity: 0; }
+}
+
+@keyframes pd-pulse-soft {
+  0%, 100% { box-shadow: var(--pd-shadow-sm); }
+  50% { box-shadow: var(--pd-glow); }
+}
+
+@keyframes pd-mark-glow {
+  from { filter: saturate(1); transform: translateY(0); }
+  to { filter: saturate(1.25) brightness(1.08); transform: translateY(-1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

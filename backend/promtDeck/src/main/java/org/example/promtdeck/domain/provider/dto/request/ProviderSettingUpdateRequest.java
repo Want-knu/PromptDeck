@@ -1,0 +1,38 @@
+package org.example.promtdeck.domain.provider.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.example.promtdeck.domain.provider.type.AuthType;
+import org.example.promtdeck.domain.provider.type.HttpMethodType;
+
+public record ProviderSettingUpdateRequest(
+        @NotNull
+        Long version,
+
+        @NotBlank
+        String displayName,
+
+        @NotBlank
+        String model,
+
+        String endpoint,
+
+        HttpMethodType method,
+
+        AuthType authType,
+
+        String authHeaderName,
+
+        String authQueryParamName,
+
+        String headersJson,
+
+        String queryParamsJson,
+
+        String bodyTemplateJson,
+
+        String optionSchemaJson,
+
+        String responsePath
+) {
+}

@@ -3,8 +3,8 @@ services:
     image: mysql:8.0
     container_name: promptdeck-mysql
     restart: unless-stopped
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
+    expose:
+      - "3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -20,8 +20,64 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend/promtDeck
+      dockerfile: Dockerfile
+    container_name: promptdeck-backend
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=UTC&characterEncoding=UTF-8
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PORT:-3000},http://127.0.0.1:${FRONTEND_PORT:-3000}}
+      PROVIDER_API_KEY_PASSWORD: ${PROVIDER_API_KEY_PASSWORD}
+      PROVIDER_API_KEY_SALT: ${PROVIDER_API_KEY_SALT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - promptdeck-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: promptdeck-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+      # 프로덕션 HTTPS 배포 시 주석 해제
+      # - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - promptdeck-network
+
+  # HTTPS 진입점 (VM 전용). .env에 COMPOSE_PROFILES=https가 있을 때만 기동.
+  caddy:
+    image: caddy:2-alpine
+    container_name: promptdeck-caddy
+    restart: unless-stopped
+    profiles:
+      - https
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - frontend
+    networks:
+      - promptdeck-network
+
 volumes:
   mysql-data:
+  caddy-data:
 
 networks:
   promptdeck-network:
